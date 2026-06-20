@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>PackDrop WC26 | Colleziona Carte del Mondiale</title>
+  <meta name="description" content="Colleziona carte del Mondiale 2026! Apri pacchetti, trova carte Leggendarie, completa la tua collezione FIFA World Cup.">
+  <meta name="theme-color" content="#07120f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+  <!-- Non-blocking font load -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <svg aria-hidden="true" class="svg-sprite">
+    <symbol id="icon-ball" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="m12 7 4 3-1.5 4.8h-5L8 10l4-3Z"></path>
+      <path d="m8 10-4-.5"></path>
+      <path d="m16 10 4-.5"></path>
+      <path d="m9.5 14.8-2.2 3.4"></path>
+      <path d="m14.5 14.8 2.2 3.4"></path>
+    </symbol>
+    <symbol id="icon-globe" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M3 12h18"></path>
+      <path d="M12 3c2.4 2.5 3.6 5.5 3.6 9s-1.2 6.5-3.6 9"></path>
+      <path d="M12 3C9.6 5.5 8.4 8.5 8.4 12s1.2 6.5 3.6 9"></path>
+    </symbol>
+    <symbol id="icon-star" viewBox="0 0 24 24">
+      <path d="m12 3 2.6 5.4 5.9.8-4.2 4.1 1 5.8L12 16.4 6.7 19.1l1-5.8-4.2-4.1 5.9-.8L12 3Z"></path>
+    </symbol>
+    <symbol id="icon-trophy" viewBox="0 0 24 24">
+      <path d="M8 4h8v4.5a4 4 0 0 1-8 0V4Z"></path>
+      <path d="M8 6H5.5A2.5 2.5 0 0 0 8 10.5"></path>
+      <path d="M16 6h2.5a2.5 2.5 0 0 1-2.5 4.5"></path>
+      <path d="M12 13v4"></path>
+      <path d="M8.5 20h7"></path>
+      <path d="M10 17h4"></path>
+    </symbol>
+    <symbol id="icon-gift" viewBox="0 0 24 24">
+      <path d="M4 10h16v10H4V10Z"></path>
+      <path d="M3 7h18v3H3V7Z"></path>
+      <path d="M12 7v13"></path>
+      <path d="M12 7c-2.5 0-4-1.1-4-2.5C8 3.7 8.7 3 9.6 3c1.5 0 2.4 1.7 2.4 4Z"></path>
+      <path d="M12 7c2.5 0 4-1.1 4-2.5 0-.8-.7-1.5-1.6-1.5C12.9 3 12 4.7 12 7Z"></path>
+    </symbol>
+    <symbol id="icon-package" viewBox="0 0 24 24">
+      <path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7Z"></path>
+      <path d="m4 8.5 8 4.5 8-4.5"></path>
+      <path d="M12 13v7"></path>
+    </symbol>
+    <symbol id="icon-gamepad" viewBox="0 0 24 24">
+      <path d="M7.5 9h9A4.5 4.5 0 0 1 21 13.5v1.8a2.7 2.7 0 0 1-4.6 1.9L14.8 15H9.2l-1.6 2.2A2.7 2.7 0 0 1 3 15.3v-1.8A4.5 4.5 0 0 1 7.5 9Z"></path>
+      <path d="M7 13h4"></path>
+      <path d="M9 11v4"></path>
+      <path d="M16.5 12.2h.1"></path>
+      <path d="M18.5 14h.1"></path>
+    </symbol>
+    <symbol id="icon-collection" viewBox="0 0 24 24">
+      <path d="M6 5h10a2 2 0 0 1 2 2v13H8a2 2 0 0 1-2-2V5Z"></path>
+      <path d="M8 5V3h10a2 2 0 0 1 2 2v13h-2"></path>
+      <path d="M9 9h6"></path>
+      <path d="M9 13h5"></path>
+    </symbol>
+    <symbol id="icon-user" viewBox="0 0 24 24">
+      <circle cx="12" cy="8" r="4"></circle>
+      <path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path>
+    </symbol>
+    <symbol id="icon-users" viewBox="0 0 24 24">
+      <circle cx="9" cy="8" r="3.2"></circle>
+      <path d="M3.5 19a5.5 5.5 0 0 1 11 0"></path>
+      <path d="M16.5 10.5a2.8 2.8 0 1 0-1-5.4"></path>
+      <path d="M16 14.2a5 5 0 0 1 4.5 4.8"></path>
+    </symbol>
+    <symbol id="icon-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 7v5l3.5 2"></path>
+    </symbol>
+    <symbol id="icon-cards" viewBox="0 0 24 24">
+      <path d="M7 5.5 15.5 4l2.2 12.5-8.5 1.5L7 5.5Z"></path>
+      <path d="M10 8h5"></path>
+      <path d="M5.5 8.5h8v12h-8v-12Z"></path>
+    </symbol>
+    <symbol id="icon-sparkle" viewBox="0 0 24 24">
+      <path d="M12 3 14 9l6 2-6 2-2 6-2-6-6-2 6-2 2-6Z"></path>
+      <path d="M19 4v4"></path>
+      <path d="M21 6h-4"></path>
+    </symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24">
+      <path d="m5 12.5 4.3 4.3L19 7"></path>
+    </symbol>
+    <symbol id="icon-share" viewBox="0 0 24 24">
+      <path d="M8 12h8"></path>
+      <path d="M13 7l5 5-5 5"></path>
+      <path d="M5 5v14"></path>
+    </symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="6"></circle>
+      <path d="m16 16 4 4"></path>
+    </symbol>
+    <symbol id="icon-x" viewBox="0 0 24 24">
+      <path d="m6 6 12 12"></path>
+      <path d="m18 6-12 12"></path>
+    </symbol>
+    <symbol id="icon-phone" viewBox="0 0 24 24">
+      <path d="M8 3h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"></path>
+      <path d="M10 18h4"></path>
+    </symbol>
+    <symbol id="icon-mail" viewBox="0 0 24 24">
+      <path d="M4 6h16v12H4V6Z"></path>
+      <path d="m4 7 8 6 8-6"></path>
+    </symbol>
+    <symbol id="icon-medal" viewBox="0 0 24 24">
+      <path d="M8 3h8l-2.2 5h-3.6L8 3Z"></path>
+      <circle cx="12" cy="14" r="5"></circle>
+      <path d="m12 11 1 2 2.2.3-1.6 1.5.4 2.2-2-1.1-2 1.1.4-2.2-1.6-1.5L11 13l1-2Z"></path>
+    </symbol>
+    <symbol id="icon-gem" viewBox="0 0 24 24">
+      <path d="M6.5 4h11L21 9l-9 11L3 9l3.5-5Z"></path>
+      <path d="M3 9h18"></path>
+      <path d="m8 9 4 11 4-11"></path>
+      <path d="m9 4-1 5"></path>
+      <path d="m15 4 1 5"></path>
+    </symbol>
+    <symbol id="icon-calendar" viewBox="0 0 24 24">
+      <path d="M5 5h14v15H5V5Z"></path>
+      <path d="M8 3v4"></path>
+      <path d="M16 3v4"></path>
+      <path d="M5 9h14"></path>
+    </symbol>
+    <symbol id="icon-zap" viewBox="0 0 24 24">
+      <path d="M13 2 5 13h6l-1 9 8-12h-6l1-8Z"></path>
+    </symbol>
+    <symbol id="icon-lock" viewBox="0 0 24 24">
+      <path d="M7 10V8a5 5 0 0 1 10 0v2"></path>
+      <path d="M6 10h12v10H6V10Z"></path>
+      <path d="M12 14v2"></path>
+    </symbol>
+  </svg>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- LOGIN SCREEN                                           -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="login-screen">
+    <div class="login-logo">
+      <span class="brand-mark brand-mark-lg" aria-hidden="true">
+        <svg class="icon"><use href="#icon-ball"></use></svg>
+      </span>
+      <h1>PackDrop</h1>
+      <p>FIFA World Cup 2026 | Card Collecting</p>
+    </div>
+    <button id="btn-google-login" class="btn-google">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      <span>Accedi con Google</span>
+    </button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- ONBOARDING MODAL                                       -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="onboarding-modal">
+    <!-- Step 1: Username -->
+    <div id="onboarding-username" class="onboarding-card">
+      <h2>Benvenuto in PackDrop</h2>
+      <p>Scegli il tuo username per iniziare a collezionare.</p>
+      <input id="username-input" class="onboarding-input" type="text" placeholder="Il tuo username" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div id="username-error" class="onboarding-error"></div>
+      <button id="btn-set-username" class="btn-onboarding" disabled>Conferma</button>
+    </div>
+    <!-- Step 2: Tutorial -->
+    <div id="onboarding-tutorial" class="onboarding-card hidden">
+      <h2>Prima apertura</h2>
+      <div class="tutorial-slides" id="tutorial-slides">
+        <div class="tutorial-slide">
+          <div class="tutorial-icon"><svg class="icon"><use href="#icon-gift"></use></svg></div>
+          <h3>Apri pacchetti ogni giorno</h3>
+          <p>Hai 5 aperture gratuite al giorno. Scegli tra Nations, Stars e Legends!</p>
+        </div>
+        <div class="tutorial-slide">
+          <div class="tutorial-icon"><svg class="icon"><use href="#icon-collection"></use></svg></div>
+          <h3>Completa la collezione</h3>
+          <p>144 carte da collezionare: Comuni, Rare, Epiche e Leggendarie.</p>
+        </div>
+        <div class="tutorial-slide">
+          <div class="tutorial-icon"><svg class="icon"><use href="#icon-users"></use></svg></div>
+          <h3>Aggiungi amici</h3>
+          <p>Cerca i tuoi amici, completa sfide e guadagna aperture bonus!</p>
+        </div>
+      </div>
+      <div class="tutorial-dots" id="tutorial-dots">
+        <div class="tutorial-dot active" data-index="0"></div>
+        <div class="tutorial-dot" data-index="1"></div>
+        <div class="tutorial-dot" data-index="2"></div>
+      </div>
+      <button id="btn-start-playing" class="btn-onboarding">Inizia a giocare</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- MAIN APP                                               -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="app" class="hidden">
+    <div class="app-container">
+
+      <!-- App Header -->
+      <header id="app-header">
+        <span class="header-logo">PackDrop</span>
+        <button id="header-profile-btn" class="header-profile-btn" aria-label="Apri profilo">
+          <img id="header-avatar" class="header-avatar" src="" alt="Avatar" loading="lazy">
+        </button>
+      </header>
+
+      <!-- ── SECTION 1: GIOCA ── -->
+      <div id="section-play" class="section active">
+
+        <!-- Pack Carousel -->
+        <div class="pack-carousel-wrapper">
+          <div class="pack-carousel" id="pack-carousel">
+            <div class="pack-card selected" data-pack="nations" style="--pack-accent:#2dd4bf">
+              <span class="pack-art"><svg class="icon"><use href="#icon-globe"></use></svg></span>
+              <span class="pack-name">Nations Pack</span>
+              <span class="pack-subtitle">Team Shield</span>
+              <span class="pack-desc">Carte stemma delle 48 nazioni qualificate.</span>
+              <span class="pack-rarity-tag" style="color:#6b7280">60% Comuni</span>
+            </div>
+            <div class="pack-card" data-pack="stars" style="--pack-accent:#38bdf8">
+              <span class="pack-art"><svg class="icon"><use href="#icon-star"></use></svg></span>
+              <span class="pack-name">Stars Pack</span>
+              <span class="pack-subtitle">Star Player</span>
+              <span class="pack-desc">Il giocatore di punta di ogni nazione.</span>
+              <span class="pack-rarity-tag" style="color:#3b82f6">30% Rare</span>
+            </div>
+            <div class="pack-card" data-pack="legends" style="--pack-accent:#f8c35a">
+              <span class="pack-art"><svg class="icon"><use href="#icon-trophy"></use></svg></span>
+              <span class="pack-name">Legends Pack</span>
+              <span class="pack-subtitle">Football Icon</span>
+              <span class="pack-desc">Leggende storiche. Nessuna carta comune!</span>
+              <span class="pack-rarity-tag" style="color:#f59e0b">12% Leggendarie</span>
+            </div>
+          </div>
+          <div class="pack-dots" id="pack-dots">
+            <div class="pack-dot active" data-index="0"></div>
+            <div class="pack-dot" data-index="1"></div>
+            <div class="pack-dot" data-index="2"></div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button id="btn-open-pack" class="btn-primary pulse">APRI PACCHETTO</button>
+          <button id="btn-open-x3" class="btn-secondary hidden">APRI ×3</button>
+          <div id="pack-balance" class="pack-balance">5 aperture rimaste</div>
+        </div>
+
+        <!-- Timer (hidden by default) -->
+        <div id="reset-timer" class="timer-display hidden">
+          <span><svg class="inline-icon"><use href="#icon-clock"></use></svg>Prossime aperture gratuite tra</span>
+          <div class="timer-value" id="timer-value">00:00:00</div>
+        </div>
+
+        <!-- Challenges -->
+        <div class="challenges-section">
+          <div style="padding:0 16px"><h2 class="section-title">Sfide</h2></div>
+          <div class="challenges-scroll" id="challenges-container"></div>
+        </div>
+      </div>
+
+      <!-- ── SECTION 2: COLLEZIONE ── -->
+      <div id="section-collection" class="section" data-loaded="false">
+        <div class="collection-header">
+          <div class="progress-wrapper">
+            <div class="progress-text">
+              <span id="collection-count">0 / 144 carte</span>
+              <span id="collection-percent">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="collection-progress" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="code-search-panel">
+            <h2 class="section-title">Cerca carta</h2>
+            <div class="code-search-wrap">
+              <input id="card-code-input" class="search-input" type="text" placeholder="Codice univoco..." autocomplete="off" autocapitalize="characters" spellcheck="false">
+              <button id="btn-search-card-code" class="btn-search">
+                <svg class="icon"><use href="#icon-search"></use></svg>
+                <span>Cerca</span>
+              </button>
+            </div>
+            <div id="card-code-result"></div>
+          </div>
+        </div>
+        <div class="collection-tabs" id="collection-tabs">
+          <button class="tab-pill active" data-tab="nations" style="--tab-accent:#2dd4bf">
+            <span class="tab-label"><svg class="icon"><use href="#icon-globe"></use></svg>Nazioni</span>
+            <span class="tab-count" id="tab-count-nations">0/48</span>
+          </button>
+          <button class="tab-pill" data-tab="stars" style="--tab-accent:#38bdf8">
+            <span class="tab-label"><svg class="icon"><use href="#icon-star"></use></svg>Giocatori</span>
+            <span class="tab-count" id="tab-count-stars">0/48</span>
+          </button>
+          <button class="tab-pill" data-tab="legends" style="--tab-accent:#f8c35a">
+            <span class="tab-label"><svg class="icon"><use href="#icon-trophy"></use></svg>Leggende</span>
+            <span class="tab-count" id="tab-count-legends">0/48</span>
+          </button>
+        </div>
+        <div id="collection-grid" class="card-grid"></div>
+      </div>
+
+      <!-- ── PROFILE PANEL ── -->
+      <div id="profile-panel" class="profile-panel" aria-hidden="true">
+        <div class="profile-panel-overlay" id="profile-panel-overlay"></div>
+        <div class="profile-panel-content" role="dialog" aria-modal="true" aria-label="Profilo">
+          <button id="profile-close" class="modal-close profile-close" aria-label="Chiudi profilo">
+            <svg class="icon"><use href="#icon-x"></use></svg>
+          </button>
+        <!-- Hero -->
+        <div class="profile-hero">
+          <img id="profile-avatar" class="profile-avatar" src="" alt="Avatar">
+          <div id="profile-name" class="profile-name"></div>
+          <div id="profile-username" class="profile-username"></div>
+          <div id="profile-completion" class="profile-completion">0% completato</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><svg class="icon"><use href="#icon-package"></use></svg></div>
+            <div class="stat-value" id="stat-packs">0</div>
+            <div class="stat-label">Pacchetti aperti</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><svg class="icon"><use href="#icon-cards"></use></svg></div>
+            <div class="stat-value" id="stat-cards">0</div>
+            <div class="stat-label">Carte sbloccate</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><svg class="icon"><use href="#icon-sparkle"></use></svg></div>
+            <div class="stat-value" id="stat-legendary">0</div>
+            <div class="stat-label">Leggendarie</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><svg class="icon"><use href="#icon-check"></use></svg></div>
+            <div class="stat-value" id="stat-challenges">0</div>
+            <div class="stat-label">Sfide completate</div>
+          </div>
+        </div>
+
+        <!-- Friends -->
+        <div class="friends-section">
+          <h2 class="section-title">Amici</h2>
+          <div id="friends-list"></div>
+        </div>
+
+        <div class="divider" style="margin:16px"></div>
+
+        <!-- Search User -->
+        <div class="search-section">
+          <h2 class="section-title">Cerca utente</h2>
+          <div class="search-input-wrap">
+            <input id="search-username" class="search-input" type="text" placeholder="Username..." autocomplete="off" autocapitalize="off" spellcheck="false">
+            <button id="btn-search-user" class="btn-search">Cerca</button>
+          </div>
+          <div id="search-result"></div>
+        </div>
+
+        <!-- Friend Requests -->
+        <div class="friends-section" id="requests-section" style="display:none">
+          <h2 class="section-title">Richieste in arrivo</h2>
+          <div id="requests-list"></div>
+        </div>
+
+        <div class="divider" style="margin:16px"></div>
+
+        <!-- Invite -->
+        <div style="padding:0 16px">
+          <button id="btn-invite" class="btn-invite">
+            <svg class="icon"><use href="#icon-share"></use></svg>
+            <span>Invita amici</span>
+          </button>
+        </div>
+
+        <div class="profile-reset-wrap">
+          <button id="btn-reset-progress" class="btn-reset-progress" type="button">
+            <svg class="icon"><use href="#icon-zap"></use></svg>
+            <span>Reset progressi</span>
+          </button>
+          <p class="profile-reset-hint">Cancella progressi locali e dati sincronizzati su Firebase.</p>
+        </div>
+        </div>
+      </div>
+
+    </div><!-- /app-container -->
+  </div><!-- /app -->
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- BOTTOM NAVIGATION                                      -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <nav id="bottom-nav" class="hidden">
+    <button class="nav-tab active" data-section="play">
+      <span class="nav-icon"><svg class="icon"><use href="#icon-ball"></use></svg></span>
+      <span class="nav-label">Gioca</span>
+    </button>
+    <button class="nav-tab" data-section="collection">
+      <span class="nav-icon"><svg class="icon"><use href="#icon-collection"></use></svg></span>
+      <span class="nav-label">Collezione</span>
+    </button>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- PACK OPENING OVERLAY                                   -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="pack-overlay">
+    <div class="overlay-bg" id="overlay-bg"></div>
+    <!-- Content injected dynamically by app.js -->
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- CARD DETAIL MODAL                                      -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="card-modal">
+    <div class="modal-overlay" id="modal-overlay"></div>
+    <div class="modal-content" id="modal-content">
+      <button class="modal-close" id="modal-close" aria-label="Chiudi">
+        <svg class="icon"><use href="#icon-x"></use></svg>
+      </button>
+      <div class="modal-card-preview" id="modal-card-preview"></div>
+      <div class="modal-info" id="modal-info"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- RESET CONFIRMATION MODAL                               -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="reset-confirm-modal" class="confirm-modal" aria-hidden="true">
+    <div class="confirm-modal-overlay" id="reset-confirm-overlay"></div>
+    <div class="confirm-modal-content" role="dialog" aria-modal="true" aria-labelledby="reset-confirm-title">
+      <div class="confirm-modal-icon" aria-hidden="true">
+        <svg class="icon"><use href="#icon-lock"></use></svg>
+      </div>
+      <h3 id="reset-confirm-title">Reset completo?</h3>
+      <p>Questa operazione elimina tutti i progressi, anche quelli salvati su Firebase. Non si può annullare.</p>
+      <div class="confirm-modal-actions">
+        <button id="btn-reset-cancel" class="btn-cancel-reset" type="button">Annulla</button>
+        <button id="btn-reset-confirm" class="btn-confirm-reset" type="button">Conferma</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- INSTALL TOAST                                          -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="install-toast">
+    <span class="toast-icon"><svg class="icon"><use href="#icon-phone"></use></svg></span>
+    <span class="toast-text">Installa PackDrop per giocare offline</span>
+    <button id="btn-install" class="btn-install">Installa</button>
+    <button id="btn-dismiss-install" class="toast-dismiss" aria-label="Chiudi">
+      <svg class="icon"><use href="#icon-x"></use></svg>
+    </button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- FIREBASE SDK (Compat — lightweight, CDN-hosted)        -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <!-- App Scripts -->
+  <script src="firebase-config.js"></script>
+  <script src="cards-data.js"></script>
+  <script src="app.js"></script>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+      const modal = $('reset-confirm-modal');
+      const overlay = $('reset-confirm-overlay');
+      const openBtn = $('btn-reset-progress');
+      const cancelBtn = $('btn-reset-cancel');
+      const confirmBtn = $('btn-reset-confirm');
+
+      if (!modal || !overlay || !openBtn || !cancelBtn || !confirmBtn) return;
+
+      const closeModal = () => {
+        modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('modal-open');
+        confirmBtn.disabled = false;
+        confirmBtn.classList.remove('loading');
+        confirmBtn.textContent = 'Conferma';
+      };
+
+      const openModal = () => {
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+      };
+
+      const clearClientState = async () => {
+        try { localStorage.clear(); } catch (err) {}
+        try { sessionStorage.clear(); } catch (err) {}
+
+        try {
+          if (window.caches && typeof caches.keys === 'function') {
+            const keys = await caches.keys();
+            await Promise.all(keys.map((key) => caches.delete(key)));
+          }
+        } catch (err) {}
+
+        try {
+          if (window.indexedDB && typeof indexedDB.databases === 'function') {
+            const dbs = await indexedDB.databases();
+            await Promise.all((dbs || []).map((db) => {
+              if (!db || !db.name) return Promise.resolve();
+              return new Promise((resolve) => {
+                const req = indexedDB.deleteDatabase(db.name);
+                req.onsuccess = req.onerror = req.onblocked = () => resolve();
+              });
+            }));
+          }
+        } catch (err) {}
+      };
+
+      const performReset = async () => {
+        confirmBtn.disabled = true;
+        confirmBtn.classList.add('loading');
+        confirmBtn.textContent = 'Reset...';
+
+        try {
+          const auth = window.firebase && typeof firebase.auth === 'function' ? firebase.auth() : null;
+          const db = window.firebase && typeof firebase.firestore === 'function' ? firebase.firestore() : null;
+          const user = auth && auth.currentUser ? auth.currentUser : null;
+          const uid = user && user.uid ? user.uid : null;
+
+          if (db && uid) {
+            // 1. Get user document data to get username and relationships
+            let username = null;
+            let friends = [];
+            let friendRequests = [];
+            let sentRequests = [];
+            
+            try {
+              const userDoc = await db.collection('pd_users').doc(uid).get();
+              if (userDoc.exists) {
+                const uData = userDoc.data();
+                username = uData.username;
+                friends = uData.friends || [];
+                friendRequests = uData.friendRequests || [];
+                sentRequests = uData.sentRequests || [];
+              }
+            } catch (err) {
+              console.error('Error fetching user data for reset:', err);
+            }
+
+            // 2. Clean up friendships and sent/received friend requests from other users
+            const relationshipPromises = [];
+            for (const fUid of friends) {
+              relationshipPromises.push(
+                db.collection('pd_users').doc(fUid).update({
+                  friends: firebase.firestore.FieldValue.arrayRemove(uid)
+                }).catch(() => {})
+              );
+            }
+            for (const rUid of friendRequests) {
+              relationshipPromises.push(
+                db.collection('pd_users').doc(rUid).update({
+                  sentRequests: firebase.firestore.FieldValue.arrayRemove(uid)
+                }).catch(() => {})
+              );
+            }
+            for (const sUid of sentRequests) {
+              relationshipPromises.push(
+                db.collection('pd_users').doc(sUid).update({
+                  friendRequests: firebase.firestore.FieldValue.arrayRemove(uid)
+                }).catch(() => {})
+              );
+            }
+            if (relationshipPromises.length > 0) {
+              try {
+                await Promise.all(relationshipPromises);
+              } catch (err) {
+                console.error('Error cleaning up relationships:', err);
+              }
+            }
+
+            // 3. Delete subcollection 'collection' under pd_users/${uid}
+            try {
+              const collSnap = await db.collection('pd_users').doc(uid).collection('collection').get();
+              const deleteCollPromises = [];
+              collSnap.forEach((doc) => {
+                deleteCollPromises.push(doc.ref.delete());
+              });
+              if (deleteCollPromises.length > 0) {
+                await Promise.all(deleteCollPromises);
+              }
+            } catch (err) {
+              console.error('Error deleting collection subcollection:', err);
+            }
+
+            // 4. Delete card codes owned by the user in pd_card_codes
+            try {
+              const codesSnap = await db.collection('pd_card_codes').where('ownerUid', '==', uid).get();
+              const deleteCodesPromises = [];
+              codesSnap.forEach((doc) => {
+                deleteCodesPromises.push(doc.ref.delete());
+              });
+              if (deleteCodesPromises.length > 0) {
+                await Promise.all(deleteCodesPromises);
+              }
+            } catch (err) {
+              console.error('Error deleting card codes:', err);
+            }
+
+            // 5. Delete username registration mapping in pd_usernames
+            if (username) {
+              try {
+                await db.collection('pd_usernames').doc(username.toLowerCase()).delete();
+              } catch (err) {
+                console.error('Error deleting username document:', err);
+              }
+            }
+
+            // 6. Delete the user profile document itself
+            try {
+              await db.collection('pd_users').doc(uid).delete();
+            } catch (err) {
+              console.error('Error deleting user profile document:', err);
+            }
+          }
+
+          // 7. Clear local database, cache, localStorage, etc.
+          await clearClientState();
+
+          // 8. Sign out from Firebase Auth
+          if (auth && typeof auth.signOut === 'function') {
+            try { await auth.signOut(); } catch (err) {}
+          }
+
+          closeModal();
+          window.location.reload();
+        } catch (err) {
+          console.error('Reset failed:', err);
+          confirmBtn.disabled = false;
+          confirmBtn.classList.remove('loading');
+          confirmBtn.textContent = 'Conferma';
+          closeModal();
+          alert('Impossibile completare il reset. Riprova tra poco.');
+        }
+      };
+
+      openBtn.addEventListener('click', openModal);
+      cancelBtn.addEventListener('click', closeModal);
+      overlay.addEventListener('click', closeModal);
+      confirmBtn.addEventListener('click', performReset);
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && modal.classList.contains('active')) {
+          closeModal();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

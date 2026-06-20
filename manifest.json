@@ -1,0 +1,57 @@
+{
+  "name": "PackDrop WC26",
+  "short_name": "PackDrop",
+  "id": "./",
+  "description": "Colleziona carte del Mondiale 2026! Apri pacchetti, trova Leggendarie, completa la tua collezione.",
+  "lang": "it",
+  "dir": "ltr",
+  "start_url": "./?mode=standalone",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#07120f",
+  "theme_color": "#07120f",
+  "categories": ["games", "entertainment"],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Gioca",
+      "short_name": "Gioca",
+      "url": "./?section=play",
+      "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Collezione",
+      "short_name": "Collezione",
+      "url": "./?section=collection",
+      "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
