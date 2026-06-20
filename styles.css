@@ -332,12 +332,13 @@ a {
   position: sticky;
   top: 0;
   z-index: 50;
-  height: 68px;
+  height: auto;
+  min-height: calc(68px + env(safe-area-inset-top));
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 8px clamp(14px, 4vw, 30px);
+  padding: calc(8px + env(safe-area-inset-top)) clamp(14px, 4vw, 30px) 8px;
   background: rgba(6, 18, 15, 0.72);
   border-bottom: 1px solid rgba(233, 255, 245, 0.1);
   backdrop-filter: blur(28px) saturate(1.25);
@@ -1061,6 +1062,23 @@ a {
   font-size: 22px;
 }
 
+.card-mark-flag {
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.flag-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .card-mark.rarity-common { background: linear-gradient(145deg, #53615c, #1d2824); }
 .card-mark.rarity-rare { background: linear-gradient(145deg, #38bdf8, #0e4661); }
 .card-mark.rarity-epic { background: linear-gradient(145deg, #b27bff, #44225f); }
@@ -1522,7 +1540,7 @@ a {
   bottom: 0;
   width: min(420px, 100%);
   overflow-y: auto;
-  padding: 0 16px 32px;
+  padding: calc(16px + env(safe-area-inset-top)) 16px 32px;
   background: rgba(9, 20, 16, 0.97);
   border-left: 1px solid rgba(233, 255, 245, 0.12);
   box-shadow: -24px 0 80px rgba(0, 0, 0, 0.5);
@@ -1541,7 +1559,7 @@ a {
 
 .profile-close {
   position: sticky;
-  top: 12px;
+  top: calc(12px + env(safe-area-inset-top));
   float: right;
   margin: 12px 0 0;
   z-index: 2;
