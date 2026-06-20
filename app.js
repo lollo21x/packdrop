@@ -61,6 +61,62 @@ function svgIcon(name, className = 'icon') {
   return `<svg class="${className}" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
 }
 
+const NATION_CODES = {
+  'Argentina': 'ar',
+  'Brasile': 'br',
+  'Francia': 'fr',
+  'Germania': 'de',
+  'Spagna': 'es',
+  'Inghilterra': 'gb-eng',
+  'Portogallo': 'pt',
+  'Paesi Bassi': 'nl',
+  'Belgio': 'be',
+  'Croazia': 'hr',
+  'Uruguay': 'uy',
+  'Colombia': 'co',
+  'Marocco': 'ma',
+  'USA': 'us',
+  'Giappone': 'jp',
+  'Messico': 'mx',
+  'Norvegia': 'no',
+  'Senegal': 'sn',
+  'Turchia': 'tr',
+  'Scozia': 'gb-sct',
+  'Australia': 'au',
+  'Iran': 'ir',
+  'Corea del Sud': 'kr',
+  'Arabia Saudita': 'sa',
+  'Uzbekistan': 'uz',
+  'Iraq': 'iq',
+  'Giordania': 'jo',
+  'Qatar': 'qa',
+  'Algeria': 'dz',
+  'Cabo Verde': 'cv',
+  'Congo DR': 'cd',
+  "Costa d'Avorio": 'ci',
+  'Egitto': 'eg',
+  'Ghana': 'gh',
+  'Sud Africa': 'za',
+  'Tunisia': 'tn',
+  'Curaçao': 'cw',
+  'Haiti': 'ht',
+  'Panama': 'pa',
+  'Ecuador': 'ec',
+  'Paraguay': 'py',
+  'Nuova Zelanda': 'nz',
+  'Austria': 'at',
+  'Bosnia ed Erzegovina': 'ba',
+  'Repubblica Ceca': 'cz',
+  'Svezia': 'se',
+  'Svizzera': 'ch',
+  'Canada': 'ca',
+  'Liberia': 'lr',
+  'Nigeria': 'ng',
+  'Romania': 'ro',
+  'Corea del Nord': 'kp',
+  'Cile': 'cl'
+};
+
 function getCardInitials(card) {
   const source = card.type === 'team' ? card.nation : (card.subjectName || card.name || card.nation);
   const cleaned = source
@@ -74,6 +130,16 @@ function getCardInitials(card) {
 }
 
 function cardMark(card, className = '') {
+  if (card.type === 'team') {
+    const code = NATION_CODES[card.nation];
+    if (code) {
+      const flagUrl = `https://flagcdn.com/w160/${code}.png`;
+      return `<span class="card-mark rarity-${card.rarity} ${className} card-mark-flag" aria-hidden="true">
+        <img src="${flagUrl}" alt="${card.nation}" class="flag-img" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+        <span class="flag-fallback-initials" style="display:none; width:100%; height:100%; place-items:center;">${getCardInitials(card)}</span>
+      </span>`;
+    }
+  }
   return `<span class="card-mark rarity-${card.rarity} ${className}" aria-hidden="true">${getCardInitials(card)}</span>`;
 }
 
