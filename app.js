@@ -275,16 +275,18 @@ function loadPlayerPhotoCache() {
     const raw = localStorage.getItem(PLAYER_PHOTO_CACHE_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
     if (!parsed || typeof parsed !== 'object') return {};
-    // Remove entries that only have failedAt (no photo) so they get retried with updated API params
     const cleaned = {};
     Object.entries(parsed).forEach(([k, v]) => {
-      if (v && v.photo) cleaned[k] = v;
+      if (v && v.photo) cleaned[k] = v; // Still stores remote URLs as fallback
     });
     return cleaned;
   } catch (err) {
     return {};
   }
 }
+
+// Initialize memory cache
+playerPhotoCache = loadPlayerPhotoCache();
 
 function savePlayerPhotoCache() {
   try {
@@ -401,7 +403,11 @@ function refreshPlayerPhotoMarks(cardId) {
 }
 
 function queuePlayerPhoto(card) {
-  if (!card || card.type === 'team' || getCachedPlayerPhoto(card) || playerPhotoInFlight.has(card.id)) return;
+  if (!card || card.type === 'team' || playerPhotoInFlight.has(card.id)) return;
+  
+  // First, check if we have it in memory/IDB
+  if (playerPhotoCache[card.id]?.blobUrl) return;
+
   const url = buildPlayerPhotoUrl(card);
   if (!url) return;
 
@@ -411,9 +417,34 @@ function queuePlayerPhoto(card) {
   playerPhotoInFlight.add(card.id);
   scheduleIdle(async () => {
     try {
-      const photo = await fetchPlayerPhoto(card);
-      if (photo) {
-        playerPhotoCache[card.id] = { photo, updatedAt: Date.now() };
+      // 1. Try IDB first
+      const blob = await getPhotoFromIDB(card.id);
+      if (blob) {
+        const objUrl = URL.createObjectURL(blob);
+        playerPhotoCache[card.id] = { ...playerPhotoCache[card.id], photo: objUrl, blobUrl: objUrl };
+        refreshPlayerPhotoMarks(card.id);
+        playerPhotoInFlight.delete(card.id);
+        return;
+      }
+
+      // 2. Fetch from API or direct URL
+      const photoUrl = await fetchPlayerPhoto(card);
+      if (photoUrl) {
+        // Download the actual image to cache as Blob
+        try {
+          const res = await fetch(photoUrl);
+          if (res.ok) {
+            const newBlob = await res.blob();
+            await savePhotoToIDB(card.id, newBlob);
+            const objUrl = URL.createObjectURL(newBlob);
+            playerPhotoCache[card.id] = { photo: objUrl, blobUrl: objUrl, updatedAt: Date.now() };
+          } else {
+            // Fallback to URL if download fails
+            playerPhotoCache[card.id] = { photo: photoUrl, updatedAt: Date.now() };
+          }
+        } catch (e) {
+          playerPhotoCache[card.id] = { photo: photoUrl, updatedAt: Date.now() };
+        }
         savePlayerPhotoCache();
         refreshPlayerPhotoMarks(card.id);
       } else {
@@ -427,7 +458,7 @@ function queuePlayerPhoto(card) {
     } finally {
       playerPhotoInFlight.delete(card.id);
     }
-  }, 2000);
+  }, 500);
 }
 
 function cardMark(card, className = '') {
@@ -2452,18 +2483,23 @@ async function renderFriendsList() {
 
   list.innerHTML = '';
   const profiles = await fetchUserProfiles(friends);
-  friends.forEach(fUid => {
-    const fData = profiles.get(fUid);
+  friends.forEach(uid => {
+    const fData = profiles.get(uid);
     if (!fData) return;
     const item = document.createElement('div');
-    item.className = 'friend-item';
+    item.className = 'friend-card';
     item.innerHTML = `
-      <img class="friend-avatar" src="${escapeAttr(getUserAvatarUrl(fData, fUid))}" alt="" loading="lazy">
-      <div class="friend-info">
-        <div class="friend-name">${escapeHtml(fData.displayName || 'Utente')}</div>
-        <div class="friend-username">@${escapeHtml(fData.username || 'utente')}</div>
+      <img class="friend-card-avatar" src="${escapeAttr(getUserAvatarUrl(fData, uid))}" alt="" loading="lazy">
+      <div class="friend-card-info">
+        <div class="friend-card-name">${escapeHtml(fData.displayName || 'Utente')}</div>
+        <div class="friend-card-username">@${escapeHtml(fData.username || 'utente')}</div>
       </div>
-      <button class="btn-remove" data-uid="${escapeAttr(fUid)}">Rimuovi</button>
+      <div class="friend-card-actions">
+        <button class="btn-friend-action primary btn-view" data-uid="${escapeAttr(uid)}">Collezione</button>
+        <button class="btn-friend-action btn-remove" data-uid="${escapeAttr(uid)}">
+          <svg class="icon"><use href="#icon-x"></use></svg>
+        </button>
+      </div>
     `;
     list.appendChild(item);
   });
@@ -2471,6 +2507,15 @@ async function renderFriendsList() {
   if (!list.children.length) {
     list.innerHTML = `<div class="empty-state"><p>Amici non caricati. Riprova tra poco.</p></div>`;
   }
+
+  // Add view collection handlers
+  list.querySelectorAll('.btn-view').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const uid = btn.dataset.uid;
+      const fData = profiles.get(uid);
+      if (fData) showFriendCollection({ ...fData, uid });
+    });
+  });
 
   // Remove friend handlers
   list.querySelectorAll('.btn-remove').forEach(btn => {
@@ -2480,6 +2525,34 @@ async function renderFriendsList() {
       renderFriendsList();
     });
   });
+}
+
+// ── Friend Collection Modal ──
+function showFriendCollection(fData) {
+  const modal = $('friend-collection-modal');
+  if (!modal) return;
+  $('friend-modal-title').textContent = `Collezione di ${fData.displayName || fData.username}`;
+  $('friend-modal-avatar').src = getUserAvatarUrl(fData, fData.uid || '');
+  
+  const grid = $('friend-collection-grid');
+  grid.innerHTML = '';
+  const friendCards = fData.collection || {};
+  
+  ALL_CARDS.forEach(card => {
+    const isOwned = !!friendCards[card.id];
+    const el = document.createElement('div');
+    el.className = `card-wrapper ${isOwned ? '' : 'missing'}`;
+    el.innerHTML = `
+      <div class="card ${card.rarity} type-${card.type}">
+        ${cardMark(card)}
+        ${card.type === 'team' ? `<div class="card-name">${escapeHtml(card.name)}</div>` : ''}
+      </div>
+    `;
+    grid.appendChild(el);
+  });
+  
+  modal.classList.add('active');
+  modal.setAttribute('aria-hidden', 'false');
 }
 
 async function renderFriendRequests() {
@@ -2573,19 +2646,36 @@ async function renderFriendRequests() {
 function setupProfileHandlers() {
   if (profileHandlersReady) return;
   profileHandlersReady = true;
+
+  // Profile Tabs
+  const tabs = document.querySelectorAll('.profile-tab');
+  const contents = document.querySelectorAll('.profile-tab-content');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      contents.forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      const contentId = `profile-tab-${tab.dataset.tab}`;
+      const content = $(contentId);
+      if (content) content.classList.add('active');
+    });
+  });
+
   // Search user
   $('btn-search-user').addEventListener('click', searchUser);
-  $('search-username').addEventListener('keydown', e => {
+  $('friend-search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') searchUser();
   });
 
   // Invite
-  $('btn-invite').addEventListener('click', shareInvite);
+  const btnInvite = $('btn-invite');
+  if (btnInvite) btnInvite.addEventListener('click', shareInvite);
 }
 
 async function searchUser() {
-  const username = $('search-username').value.trim().toLowerCase().replace(/^@+/, '');
-  const resultEl = $('search-result');
+  const inputEl = $('friend-search-input');
+  const username = inputEl ? inputEl.value.trim().toLowerCase().replace(/^@+/, '') : '';
+  const resultEl = $('friend-search-result');
   if (!username) { resultEl.innerHTML = ''; return; }
   if (!isOnlineApp()) {
     resultEl.innerHTML = `<p class="text-muted" style="padding:8px">Ricerca utenti disponibile appena Firebase è collegato.</p>`;
