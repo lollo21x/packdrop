@@ -1,5 +1,5 @@
 // ============================================================
-// PackDrop WC26 — Complete Card Database (144 cards)
+// PackDrop WC26 — Complete Card Database (220 cards)
 // This file is loaded at startup. Never read from Firestore.
 // ============================================================
 
@@ -69,13 +69,15 @@ const ALL_CARDS = [
   // STARS PACK — Star Player (48 cards)
   // ════════════════════════════════════════════════════════════
 
-  // Legendary (4)
+  // Legendary (6)
   { id:'star_messi', type:'player', name:'Lionel Messi', subjectName:'Lionel Messi', nation:'Argentina', rarity:'legendary', packType:'stars' },
   { id:'star_mbappe', type:'player', name:'Kylian Mbappé', subjectName:'Kylian Mbappé', nation:'Francia', rarity:'legendary', packType:'stars' },
   { id:'star_vinicius', type:'player', name:'Vinícius Jr.', subjectName:'Vinícius Jr.', nation:'Brasile', rarity:'legendary', packType:'stars' },
   { id:'star_haaland', type:'player', name:'Erling Haaland', subjectName:'Erling Haaland', nation:'Norvegia', rarity:'legendary', packType:'stars' },
+  { id:'star_neymar', type:'player', name:'Neymar Jr.', subjectName:'Neymar Jr.', nation:'Brasile', rarity:'legendary', packType:'stars' },
+  { id:'star_mbappe_alt', type:'player', name:'Lautaro Martínez', subjectName:'Lautaro Martínez', nation:'Argentina', rarity:'legendary', packType:'stars' },
 
-  // Epic (8)
+  // Epic (14)
   { id:'star_bellingham', type:'player', name:'Jude Bellingham', subjectName:'Jude Bellingham', nation:'Inghilterra', rarity:'epic', packType:'stars' },
   { id:'star_yamal', type:'player', name:'Lamine Yamal', subjectName:'Lamine Yamal', nation:'Spagna', rarity:'epic', packType:'stars' },
   { id:'star_ronaldo', type:'player', name:'Cristiano Ronaldo', subjectName:'Cristiano Ronaldo', nation:'Portogallo', rarity:'epic', packType:'stars' },
@@ -84,8 +86,14 @@ const ALL_CARDS = [
   { id:'star_rodri', type:'player', name:'Rodri', subjectName:'Rodri', nation:'Spagna', rarity:'epic', packType:'stars' },
   { id:'star_pedri', type:'player', name:'Pedri', subjectName:'Pedri', nation:'Spagna', rarity:'epic', packType:'stars' },
   { id:'star_son', type:'player', name:'Son Heung-min', subjectName:'Son Heung-min', nation:'Corea del Sud', rarity:'epic', packType:'stars' },
+  { id:'star_leao', type:'player', name:'Rafael Leão', subjectName:'Rafael Leão', nation:'Portogallo', rarity:'epic', packType:'stars' },
+  { id:'star_osimhen', type:'player', name:'Victor Osimhen', subjectName:'Victor Osimhen', nation:'Nigeria', rarity:'epic', packType:'stars' },
+  { id:'star_alvarez', type:'player', name:'Julián Álvarez', subjectName:'Julián Álvarez', nation:'Argentina', rarity:'epic', packType:'stars' },
+  { id:'star_olise', type:'player', name:'Michael Olise', subjectName:'Michael Olise', nation:'Francia', rarity:'epic', packType:'stars' },
+  { id:'star_wirtz', type:'player', name:'Florian Wirtz', subjectName:'Florian Wirtz', nation:'Germania', rarity:'epic', packType:'stars' },
+  { id:'star_guler', type:'player', name:'Arda Güler', subjectName:'Arda Güler', nation:'Turchia', rarity:'epic', packType:'stars' },
 
-  // Rare (18)
+  // Rare (28)
   { id:'star_de_bruyne', type:'player', name:'Kevin De Bruyne', subjectName:'Kevin De Bruyne', nation:'Belgio', rarity:'rare', packType:'stars' },
   { id:'star_modric', type:'player', name:'Luka Modrić', subjectName:'Luka Modrić', nation:'Croazia', rarity:'rare', packType:'stars' },
   { id:'star_musiala', type:'player', name:'Jamal Musiala', subjectName:'Jamal Musiala', nation:'Germania', rarity:'rare', packType:'stars' },
@@ -104,8 +112,18 @@ const ALL_CARDS = [
   { id:'star_neuer', type:'player', name:'Manuel Neuer', subjectName:'Manuel Neuer', nation:'Germania', rarity:'rare', packType:'stars' },
   { id:'star_david', type:'player', name:'Jonathan David', subjectName:'Jonathan David', nation:'Canada', rarity:'rare', packType:'stars' },
   { id:'star_lookman', type:'player', name:'Ademola Lookman', subjectName:'Ademola Lookman', nation:'Ghana', rarity:'rare', packType:'stars' },
+  { id:'star_diallo', type:'player', name:'Amadou Diallo', subjectName:'Amadou Diallo', nation:'Senegal', rarity:'rare', packType:'stars' },
+  { id:'star_ruiz', type:'player', name:'Pedri González', subjectName:'Pedri González', nation:'USA', rarity:'rare', packType:'stars' },
+  { id:'star_szoboszlai', type:'player', name:'Dominik Szoboszlai', subjectName:'Dominik Szoboszlai', nation:'Ungheria', rarity:'rare', packType:'stars' },
+  { id:'star_kudus', type:'player', name:'Mohammed Kudus', subjectName:'Mohammed Kudus', nation:'Ghana', rarity:'rare', packType:'stars' },
+  { id:'star_nkunku', type:'player', name:'Christopher Nkunku', subjectName:'Christopher Nkunku', nation:'Francia', rarity:'rare', packType:'stars' },
+  { id:'star_chiesa', type:'player', name:'Federico Chiesa', subjectName:'Federico Chiesa', nation:'Italia', rarity:'rare', packType:'stars' },
+  { id:'star_vlahovic', type:'player', name:'Dušan Vlahović', subjectName:'Dušan Vlahović', nation:'Serbia', rarity:'rare', packType:'stars' },
+  { id:'star_simeone', type:'player', name:'Giovanni Simeone', subjectName:'Giovanni Simeone', nation:'Argentina', rarity:'rare', packType:'stars' },
+  { id:'star_hakimi', type:'player', name:'Achraf Hakimi', subjectName:'Achraf Hakimi', nation:'Marocco', rarity:'rare', packType:'stars' },
+  { id:'star_carvajal', type:'player', name:'Dani Carvajal', subjectName:'Dani Carvajal', nation:'Spagna', rarity:'rare', packType:'stars' },
 
-  // Common (18)
+  // Common (28)
   { id:'star_raul', type:'player', name:'Raúl Jiménez', subjectName:'Raúl Jiménez', nation:'Messico', rarity:'common', packType:'stars' },
   { id:'star_schick', type:'player', name:'Patrik Schick', subjectName:'Patrik Schick', nation:'Repubblica Ceca', rarity:'common', packType:'stars' },
   { id:'star_shaqiri', type:'player', name:'Xherdan Shaqiri', subjectName:'Xherdan Shaqiri', nation:'Svizzera', rarity:'common', packType:'stars' },
@@ -124,20 +142,32 @@ const ALL_CARDS = [
   { id:'star_estupinan', type:'player', name:'Pervis Estupiñán', subjectName:'Pervis Estupiñán', nation:'Ecuador', rarity:'common', packType:'stars' },
   { id:'star_almiron', type:'player', name:'Miguel Almirón', subjectName:'Miguel Almirón', nation:'Paraguay', rarity:'common', packType:'stars' },
   { id:'star_sarr', type:'player', name:'Ismaïla Sarr', subjectName:'Ismaïla Sarr', nation:'Senegal', rarity:'common', packType:'stars' },
+  { id:'star_tahith', type:'player', name:'Tahith Chong', subjectName:'Tahith Chong', nation:'Curaçao', rarity:'common', packType:'stars' },
+  { id:'star_abdi', type:'player', name:'Abdi Sharif', subjectName:'Abdi Sharif', nation:'Giordania', rarity:'common', packType:'stars' },
+  { id:'star_alzain', type:'player', name:'Ali Al-Bulaihi', subjectName:'Ali Al-Bulaihi', nation:'Arabia Saudita', rarity:'common', packType:'stars' },
+  { id:'star_mensah', type:'player', name:'Jonathan Mensah', subjectName:'Jonathan Mensah', nation:'Ghana', rarity:'common', packType:'stars' },
+  { id:'star_hamroun', type:'player', name:'Sofiane Hamroun', subjectName:'Sofiane Hamroun', nation:'Algeria', rarity:'common', packType:'stars' },
+  { id:'star_silva_cpv', type:'player', name:'Ryan Mendes', subjectName:'Ryan Mendes', nation:'Cabo Verde', rarity:'common', packType:'stars' },
+  { id:'star_msakni', type:'player', name:'Youssef Msakni', subjectName:'Youssef Msakni', nation:'Tunisia', rarity:'common', packType:'stars' },
+  { id:'star_dolezsar', type:'player', name:'Bonfils-Caleb Bimenyimana', subjectName:'Bonfils-Caleb Bimenyimana', nation:'Sud Africa', rarity:'common', packType:'stars' },
+  { id:'star_dirar', type:'player', name:'Abderazak Hamdallah', subjectName:'Abderazak Hamdallah', nation:'Marocco', rarity:'common', packType:'stars' },
+  { id:'star_murillo', type:'player', name:'Jeffry Murillo', subjectName:'Jeffry Murillo', nation:'Panama', rarity:'common', packType:'stars' },
 
   // ════════════════════════════════════════════════════════════
   // LEGENDS PACK — Football Icon (48 cards)
   // ════════════════════════════════════════════════════════════
 
-  // Legendary (6)
+  // Legendary (8)
   { id:'icon_pele', type:'icon', name:'Pelé', subjectName:'Pelé', nation:'Brasile', rarity:'legendary', packType:'legends' },
   { id:'icon_maradona', type:'icon', name:'Diego Maradona', subjectName:'Diego Maradona', nation:'Argentina', rarity:'legendary', packType:'legends' },
   { id:'icon_zidane', type:'icon', name:'Zinedine Zidane', subjectName:'Zinedine Zidane', nation:'Francia', rarity:'legendary', packType:'legends' },
   { id:'icon_ronaldo9', type:'icon', name:'Ronaldo Nazário', subjectName:'Ronaldo Nazário', nation:'Brasile', rarity:'legendary', packType:'legends' },
   { id:'icon_cruyff', type:'icon', name:'Johan Cruyff', subjectName:'Johan Cruyff', nation:'Paesi Bassi', rarity:'legendary', packType:'legends' },
   { id:'icon_beckenbauer', type:'icon', name:'Franz Beckenbauer', subjectName:'Franz Beckenbauer', nation:'Germania', rarity:'legendary', packType:'legends' },
+  { id:'icon_maldini', type:'icon', name:'Paolo Maldini', subjectName:'Paolo Maldini', nation:'Italia', rarity:'legendary', packType:'legends' },
+  { id:'icon_puyol', type:'icon', name:'Carles Puyol', subjectName:'Carles Puyol', nation:'Spagna', rarity:'legendary', packType:'legends' },
 
-  // Epic (14)
+  // Epic (20)
   { id:'icon_ronaldinho', type:'icon', name:'Ronaldinho', subjectName:'Ronaldinho', nation:'Brasile', rarity:'epic', packType:'legends' },
   { id:'icon_henry', type:'icon', name:'Thierry Henry', subjectName:'Thierry Henry', nation:'Francia', rarity:'epic', packType:'legends' },
   { id:'icon_figo', type:'icon', name:'Luís Figo', subjectName:'Luís Figo', nation:'Portogallo', rarity:'epic', packType:'legends' },
@@ -152,8 +182,14 @@ const ALL_CARDS = [
   { id:'icon_platini', type:'icon', name:'Michel Platini', subjectName:'Michel Platini', nation:'Francia', rarity:'epic', packType:'legends' },
   { id:'icon_cantona', type:'icon', name:'Eric Cantona', subjectName:'Eric Cantona', nation:'Francia', rarity:'epic', packType:'legends' },
   { id:'icon_vieira', type:'icon', name:'Patrick Vieira', subjectName:'Patrick Vieira', nation:'Francia', rarity:'epic', packType:'legends' },
+  { id:'icon_xavi', type:'icon', name:'Xavi Hernández', subjectName:'Xavi Hernández', nation:'Spagna', rarity:'epic', packType:'legends' },
+  { id:'icon_iniesta', type:'icon', name:'Andrés Iniesta', subjectName:'Andrés Iniesta', nation:'Spagna', rarity:'epic', packType:'legends' },
+  { id:'icon_raul', type:'icon', name:'Raúl González', subjectName:'Raúl González', nation:'Spagna', rarity:'epic', packType:'legends' },
+  { id:'icon_totti', type:'icon', name:'Francesco Totti', subjectName:'Francesco Totti', nation:'Italia', rarity:'epic', packType:'legends' },
+  { id:'icon_del_piero', type:'icon', name:'Alessandro Del Piero', subjectName:'Alessandro Del Piero', nation:'Italia', rarity:'epic', packType:'legends' },
+  { id:'icon_rivaldo', type:'icon', name:'Rivaldo', subjectName:'Rivaldo', nation:'Brasile', rarity:'epic', packType:'legends' },
 
-  // Rare (28)
+  // Rare (40)
   { id:'icon_seedorf', type:'icon', name:'Clarence Seedorf', subjectName:'Clarence Seedorf', nation:'Paesi Bassi', rarity:'rare', packType:'legends' },
   { id:'icon_bergkamp', type:'icon', name:'Dennis Bergkamp', subjectName:'Dennis Bergkamp', nation:'Paesi Bassi', rarity:'rare', packType:'legends' },
   { id:'icon_davids', type:'icon', name:'Edgar Davids', subjectName:'Edgar Davids', nation:'Paesi Bassi', rarity:'rare', packType:'legends' },
@@ -182,6 +218,48 @@ const ALL_CARDS = [
   { id:'icon_pak_doik', type:'icon', name:'Pak Doo-ik', subjectName:'Pak Doo-ik', nation:'Corea del Nord', rarity:'rare', packType:'legends' },
   { id:'icon_sanchez', type:'icon', name:'Hugo Sánchez', subjectName:'Hugo Sánchez', nation:'Messico', rarity:'rare', packType:'legends' },
   { id:'icon_zamorano', type:'icon', name:'Iván Zamorano', subjectName:'Iván Zamorano', nation:'Cile', rarity:'rare', packType:'legends' },
+  { id:'icon_baresi', type:'icon', name:'Franco Baresi', subjectName:'Franco Baresi', nation:'Italia', rarity:'rare', packType:'legends' },
+  { id:'icon_pirlo', type:'icon', name:'Andrea Pirlo', subjectName:'Andrea Pirlo', nation:'Italia', rarity:'rare', packType:'legends' },
+  { id:'icon_buffon', type:'icon', name:'Gianluigi Buffon', subjectName:'Gianluigi Buffon', nation:'Italia', rarity:'rare', packType:'legends' },
+  { id:'icon_casillas', type:'icon', name:'Iker Casillas', subjectName:'Iker Casillas', nation:'Spagna', rarity:'rare', packType:'legends' },
+  { id:'icon_hierro', type:'icon', name:'Fernando Hierro', subjectName:'Fernando Hierro', nation:'Spagna', rarity:'rare', packType:'legends' },
+  { id:'icon_yashin', type:'icon', name:'Lev Yashin', subjectName:'Lev Yashin', nation:'URSS', rarity:'rare', packType:'legends' },
+  { id:'icon_romario', type:'icon', name:'Romário', subjectName:'Romário', nation:'Brasile', rarity:'rare', packType:'legends' },
+  { id:'icon_batistuta', type:'icon', name:'Gabriel Batistuta', subjectName:'Gabriel Batistuta', nation:'Argentina', rarity:'rare', packType:'legends' },
+  { id:'icon_kempes', type:'icon', name:'Mario Kempes', subjectName:'Mario Kempes', nation:'Argentina', rarity:'rare', packType:'legends' },
+  { id:'icon_canavaro', type:'icon', name:'Fabio Cannavaro', subjectName:'Fabio Cannavaro', nation:'Italia', rarity:'rare', packType:'legends' },
+  { id:'icon_blanc', type:'icon', name:'Laurent Blanc', subjectName:'Laurent Blanc', nation:'Francia', rarity:'rare', packType:'legends' },
+  { id:'icon_desailly', type:'icon', name:'Marcel Desailly', subjectName:'Marcel Desailly', nation:'Francia', rarity:'rare', packType:'legends' },
+
+  // Rare — nuove aggiunte
+  { id:'icon_roberto_baggio', type:'icon', name:'Roberto Baggio', subjectName:'Roberto Baggio', nation:'Italia', rarity:'rare', packType:'legends' },
+  { id:'icon_vieri', type:'icon', name:'Christian Vieri', subjectName:'Christian Vieri', nation:'Italia', rarity:'rare', packType:'legends' },
+  { id:'icon_maldini_p', type:'icon', name:'Cesare Maldini', subjectName:'Cesare Maldini', nation:'Italia', rarity:'rare', packType:'legends' },
+  { id:'icon_zola', type:'icon', name:'Gianfranco Zola', subjectName:'Gianfranco Zola', nation:'Italia', rarity:'rare', packType:'legends' },
+  { id:'icon_koeman', type:'icon', name:'Ronald Koeman', subjectName:'Ronald Koeman', nation:'Paesi Bassi', rarity:'rare', packType:'legends' },
+  { id:'icon_van_basten', type:'icon', name:'Marco van Basten', subjectName:'Marco van Basten', nation:'Paesi Bassi', rarity:'rare', packType:'legends' },
+  { id:'icon_gullit', type:'icon', name:'Ruud Gullit', subjectName:'Ruud Gullit', nation:'Paesi Bassi', rarity:'rare', packType:'legends' },
+  { id:'icon_laudrup', type:'icon', name:'Michael Laudrup', subjectName:'Michael Laudrup', nation:'Danimarca', rarity:'rare', packType:'legends' },
+  { id:'icon_schmeichel', type:'icon', name:'Peter Schmeichel', subjectName:'Peter Schmeichel', nation:'Danimarca', rarity:'rare', packType:'legends' },
+  { id:'icon_moore', type:'icon', name:'Bobby Moore', subjectName:'Bobby Moore', nation:'Inghilterra', rarity:'rare', packType:'legends' },
+  { id:'icon_lineker', type:'icon', name:'Gary Lineker', subjectName:'Gary Lineker', nation:'Inghilterra', rarity:'rare', packType:'legends' },
+  { id:'icon_gascoigne', type:'icon', name:'Paul Gascoigne', subjectName:'Paul Gascoigne', nation:'Inghilterra', rarity:'rare', packType:'legends' },
+  { id:'icon_netzer', type:'icon', name:'Günter Netzer', subjectName:'Günter Netzer', nation:'Germania', rarity:'rare', packType:'legends' },
+  { id:'icon_muller_g', type:'icon', name:'Gerd Müller', subjectName:'Gerd Müller', nation:'Germania', rarity:'rare', packType:'legends' },
+  { id:'icon_stoichkov', type:'icon', name:'Hristo Stoichkov', subjectName:'Hristo Stoichkov', nation:'Bulgaria', rarity:'rare', packType:'legends' },
+  { id:'icon_butragueno', type:'icon', name:'Emilio Butragueño', subjectName:'Emilio Butragueño', nation:'Spagna', rarity:'rare', packType:'legends' },
+  { id:'icon_zubizarreta', type:'icon', name:'Andoni Zubizarreta', subjectName:'Andoni Zubizarreta', nation:'Spagna', rarity:'rare', packType:'legends' },
+  { id:'icon_kanu', type:'icon', name:'Nwankwo Kanu', subjectName:'Nwankwo Kanu', nation:'Nigeria', rarity:'rare', packType:'legends' },
+  { id:'icon_yekini', type:'icon', name:'Rashidi Yekini', subjectName:'Rashidi Yekini', nation:'Nigeria', rarity:'rare', packType:'legends' },
+  { id:'icon_mccarthy', type:'icon', name:'Benni McCarthy', subjectName:'Benni McCarthy', nation:'Sud Africa', rarity:'rare', packType:'legends' },
+  { id:'icon_cubillas', type:'icon', name:'Teófilo Cubillas', subjectName:'Teófilo Cubillas', nation:'Perù', rarity:'rare', packType:'legends' },
+  { id:'icon_garcia', type:'icon', name:'Luis García', subjectName:'Luis García', nation:'Messico', rarity:'rare', packType:'legends' },
+  { id:'icon_suarez_luis', type:'icon', name:'Luis Suárez', subjectName:'Luis Suárez', nation:'Uruguay', rarity:'rare', packType:'legends' },
+  { id:'icon_forlan', type:'icon', name:'Diego Forlán', subjectName:'Diego Forlán', nation:'Uruguay', rarity:'rare', packType:'legends' },
+  { id:'icon_recoba', type:'icon', name:'Álvaro Recoba', subjectName:'Álvaro Recoba', nation:'Uruguay', rarity:'rare', packType:'legends' },
+  { id:'icon_park', type:'icon', name:'Park Ji-sung', subjectName:'Park Ji-sung', nation:'Corea del Sud', rarity:'rare', packType:'legends' },
+  { id:'icon_inamoto', type:'icon', name:'Junichi Inamoto', subjectName:'Junichi Inamoto', nation:'Giappone', rarity:'rare', packType:'legends' },
+  { id:'icon_daei', type:'icon', name:'Ali Daei', subjectName:'Ali Daei', nation:'Iran', rarity:'rare', packType:'legends' },
 ];
 
 // ── Helper functions ──
