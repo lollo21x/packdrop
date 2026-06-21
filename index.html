@@ -314,16 +314,102 @@
 
       <!-- ── PROFILE PANEL (Standalone Screen) ── -->
       <div id="profile-panel" class="profile-panel" aria-hidden="true">
-        
-        <!-- Identical header to app-header for safe-area alignment -->
-        <header id="profile-header" class="app-header">
-          <span class="header-logo">Profilo</span>
-          <button id="profile-close" class="header-profile-btn" aria-label="Chiudi profilo">
-            <svg class="icon" style="width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;"><use href="#icon-x"></use></svg>
+        <header id="profile-header" class="app-header" style="border-bottom: 1px solid rgba(233, 255, 245, 0.1); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; background: rgba(6, 18, 15, 0.72); backdrop-filter: blur(28px) saturate(1.25);">
+          <span class="header-logo" style="font-size: 16px;">Profilo</span>
+          <button id="profile-close" class="header-profile-btn" aria-label="Chiudi profilo" style="display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(255, 255, 255, 0.07); color: var(--text-muted); border: none;">
+            <svg class="icon" style="width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;"><use href="#icon-x"></use></svg>
           </button>
         </header>
 
         <div class="profile-panel-content" role="dialog" aria-modal="true" aria-label="Profilo">
+          <div class="profile-hero">
+            <img id="profile-avatar" class="profile-avatar" src="" alt="">
+            <div id="profile-name" class="profile-name"></div>
+            <div id="profile-username" class="profile-username"></div>
+            <div id="profile-completion" class="profile-completion"></div>
+          </div>
+
+          <div class="stats-grid" style="padding: 0 16px 22px;">
+            <div class="stat-card">
+              <div class="stat-icon"><svg class="icon"><use href="#icon-package"></use></svg></div>
+              <div id="stat-packs" class="stat-value">0</div>
+              <div class="stat-label">Pack Aperti</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><svg class="icon"><use href="#icon-collection"></use></svg></div>
+              <div id="stat-cards" class="stat-value">0</div>
+              <div class="stat-label">Carte</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><svg class="icon"><use href="#icon-trophy"></use></svg></div>
+              <div id="stat-legendary" class="stat-value">0</div>
+              <div class="stat-label">Leggendarie</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><svg class="icon"><use href="#icon-medal"></use></svg></div>
+              <div id="stat-challenges" class="stat-value">0</div>
+              <div class="stat-label">Sfide</div>
+            </div>
+          </div>
+
+          <div class="profile-tabs">
+            <button class="profile-tab active" data-tab="friends">Cerca e Amici</button>
+            <button class="profile-tab" data-tab="settings">Impostazioni</button>
+          </div>
+
+          <div id="profile-tab-friends" class="profile-tab-content active">
+            <div class="search-section section-padded">
+              <h3 class="section-title text-sm uppercase">Cerca Utente</h3>
+              <div class="search-input-wrap">
+                <input id="friend-search-input" class="search-input" type="text" placeholder="Username (@utente)" autocomplete="off" autocapitalize="off" spellcheck="false">
+                <button id="btn-search-user" class="btn-search">
+                  <svg class="icon"><use href="#icon-search"></use></svg> Cerca
+                </button>
+              </div>
+              <div id="friend-search-result"></div>
+            </div>
+
+            <div id="requests-section" class="friends-section section-padded" style="display:none">
+              <h3 class="section-title text-sm uppercase">Richieste in Attesa</h3>
+              <div id="requests-list"></div>
+            </div>
+
+            <div class="friends-section section-padded">
+              <h3 class="section-title text-sm uppercase">La tua lista Amici</h3>
+              <div id="friends-list"></div>
+            </div>
+            
+            <div class="section-padded">
+              <button id="btn-invite" class="btn-invite"><svg class="icon"><use href="#icon-share"></use></svg> Invita e ricevi pack bonus</button>
+            </div>
+          </div>
+
+          <div id="profile-tab-settings" class="profile-tab-content">
+            <div class="profile-reset-wrap section-padded">
+              <button id="btn-reset-progress" class="btn-reset-progress">
+                <svg class="icon"><use href="#icon-lock"></use></svg>
+                Reset completo account
+              </button>
+              <p class="profile-reset-hint">Questa operazione eliminerà il tuo account Firebase, amicizie e tutte le carte collezionate in modo irreversibile.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Friend Collection Modal (Inside app-container for layout constraint) -->
+      <div id="friend-collection-modal" class="profile-panel" aria-hidden="true" style="z-index: 850;">
+        <header class="app-header" style="border-bottom: 1px solid rgba(233, 255, 245, 0.1); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; background: rgba(6, 18, 15, 0.72); backdrop-filter: blur(28px) saturate(1.25);">
+          <span id="friend-modal-title" class="header-logo" style="font-size: 16px;">Collezione</span>
+          <button onclick="document.getElementById('friend-collection-modal').classList.remove('active'); document.getElementById('friend-collection-modal').setAttribute('aria-hidden', 'true');" style="display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(255, 255, 255, 0.07); color: var(--text-muted); border: none;">
+            <svg class="icon" style="width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;"><use href="#icon-x"></use></svg>
+          </button>
+        </header>
+        <div class="profile-panel-content" style="padding: 16px;">
+          <div style="display:flex; align-items:center; gap: 12px; margin-bottom: 24px;">
+             <img id="friend-modal-avatar" src="" style="width: 48px; height: 48px; border-radius: 50%;" />
+             <p style="font-size: 13px; color: var(--text-muted)">Qui trovi le carte che l'utente ha collezionato.</p>
+          </div>
+          <div id="friend-collection-grid" class="card-grid"></div>
         </div>
       </div>
 
@@ -490,7 +576,6 @@
           const uid = user && user.uid ? user.uid : null;
 
           if (db && uid) {
-            // 1. Get user document data to get username and relationships
             let username = null;
             let friends = [];
             let friendRequests = [];
@@ -509,7 +594,6 @@
               console.error('Error fetching user data for reset:', err);
             }
 
-            // 2. Clean up friendships and sent/received friend requests from other users
             const relationshipPromises = [];
             for (const fUid of friends) {
               relationshipPromises.push(
@@ -533,14 +617,9 @@
               );
             }
             if (relationshipPromises.length > 0) {
-              try {
-                await Promise.all(relationshipPromises);
-              } catch (err) {
-                console.error('Error cleaning up relationships:', err);
-              }
+              try { await Promise.all(relationshipPromises); } catch (e) {}
             }
 
-            // 2b. Delete canonical friend request documents involving this user
             try {
               const outgoingReqs = await db.collection('pd_friend_requests').where('from', '==', uid).get();
               const incomingReqs = await db.collection('pd_friend_requests').where('to', '==', uid).get();
@@ -550,11 +629,8 @@
               if (deleteFriendReqs.length > 0) {
                 await Promise.all(deleteFriendReqs);
               }
-            } catch (err) {
-              console.error('Error deleting friend request documents:', err);
-            }
+            } catch (err) {}
 
-            // 3. Delete subcollection 'collection' under pd_users/${uid}
             try {
               const collSnap = await db.collection('pd_users').doc(uid).collection('collection').get();
               const deleteCollPromises = [];
@@ -564,11 +640,8 @@
               if (deleteCollPromises.length > 0) {
                 await Promise.all(deleteCollPromises);
               }
-            } catch (err) {
-              console.error('Error deleting collection subcollection:', err);
-            }
+            } catch (err) {}
 
-            // 4. Delete card codes owned by the user in pd_card_codes
             try {
               const codesSnap = await db.collection('pd_card_codes').where('ownerUid', '==', uid).get();
               const deleteCodesPromises = [];
@@ -578,31 +651,21 @@
               if (deleteCodesPromises.length > 0) {
                 await Promise.all(deleteCodesPromises);
               }
-            } catch (err) {
-              console.error('Error deleting card codes:', err);
-            }
+            } catch (err) {}
 
-            // 5. Delete username registration mapping in pd_usernames
             if (username) {
               try {
                 await db.collection('pd_usernames').doc(username.toLowerCase()).delete();
-              } catch (err) {
-                console.error('Error deleting username document:', err);
-              }
+              } catch (err) {}
             }
 
-            // 6. Delete the user profile document itself
             try {
               await db.collection('pd_users').doc(uid).delete();
-            } catch (err) {
-              console.error('Error deleting user profile document:', err);
-            }
+            } catch (err) {}
           }
 
-          // 7. Clear local database, cache, localStorage, etc.
           await clearClientState();
 
-          // 8. Sign out from Firebase Auth
           if (auth && typeof auth.signOut === 'function') {
             try { await auth.signOut(); } catch (err) {}
           }
@@ -623,12 +686,6 @@
       cancelBtn.addEventListener('click', closeModal);
       overlay.addEventListener('click', closeModal);
       confirmBtn.addEventListener('click', performReset);
-
-      document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && modal.classList.contains('active')) {
-          closeModal();
-        }
-      });
     })();
   </script>
 </body>
