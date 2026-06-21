@@ -1145,7 +1145,8 @@ function setupNavigation() {
   // Header avatar → profile
   $('header-profile-btn').addEventListener('click', openProfilePanel);
   $('profile-close').addEventListener('click', closeProfilePanel);
-  $('profile-panel-overlay').addEventListener('click', closeProfilePanel);
+  const profileOverlay = $('profile-panel-overlay');
+  if (profileOverlay) profileOverlay.addEventListener('click', closeProfilePanel);
 }
 
 function switchSection(name) {
