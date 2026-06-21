@@ -1538,45 +1538,29 @@ a {
   clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 56%, 79% 92%, 50% 70%, 21% 92%, 32% 56%, 2% 35%, 39% 35%);
 }
 
-/* ── Profile panel (slide-in from right) ── */
+/* ── Profile panel (Standalone full-screen) ── */
 .profile-panel {
   position: fixed;
   inset: 0;
   z-index: 800;
-  pointer-events: none;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  visibility: hidden;
 }
 
 .profile-panel.active {
-  pointer-events: auto;
-}
-
-.profile-panel-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(1, 5, 4, 0.7);
-  backdrop-filter: blur(14px) saturate(1.2);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.profile-panel.active .profile-panel-overlay {
-  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
 }
 
 .profile-panel-content {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(420px, 100%);
+  flex: 1;
   overflow-y: auto;
-  padding: calc(16px + env(safe-area-inset-top)) 16px 32px;
-  background: rgba(9, 20, 16, 0.97);
-  border-left: 1px solid rgba(233, 255, 245, 0.12);
-  box-shadow: -24px 0 80px rgba(0, 0, 0, 0.5);
-  transform: translateX(100%);
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  padding: 0 0 32px;
+  background: var(--bg);
   scrollbar-width: none;
 }
 
@@ -1584,39 +1568,125 @@ a {
   display: none;
 }
 
-.profile-panel.active .profile-panel-content {
-  transform: translateX(0);
+.profile-hero {
+  padding: 24px 16px 16px;
+  text-align: center;
 }
 
-.profile-close {
-  position: sticky;
-  top: 8px;
-  float: right;
-  z-index: 851;
-  width: 44px;
-  height: 44px;
-  margin: 0 0 8px auto;
-  touch-action: manipulation;
+.profile-tabs {
+  display: flex;
+  gap: 16px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  margin-bottom: 24px;
+}
+
+.profile-tab {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 12px 8px;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+}
+
+.profile-tab.active {
+  color: var(--text);
+}
+
+.profile-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+}
+
+.profile-tab-content {
+  display: none;
+  animation: fade-in 0.3s ease;
+}
+
+.profile-tab-content.active {
+  display: block;
+}
+
+.badge-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--diff-hard);
   border-radius: 50%;
-  background: rgba(248, 255, 250, 0.12);
-  border: 1px solid rgba(233, 255, 245, 0.18);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
-  transition: background 0.18s ease, transform 0.18s ease;
-  flex-shrink: 0;
+  display: inline-block;
 }
 
-.profile-close:active {
-  transform: scale(0.9);
-  background: rgba(248, 255, 250, 0.22);
+/* Friend search input */
+.search-user-wrapper {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
-.profile-close .icon {
-  width: 20px;
-  height: 20px;
+.friend-card {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.friend-card-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  margin-right: 12px;
+  background: rgba(255,255,255,0.1);
+}
+
+.friend-card-info {
+  flex: 1;
+}
+
+.friend-card-name {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.friend-card-username {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.friend-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-friend-action {
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-friend-action.primary {
+  background: var(--accent);
+  color: #000;
 }
 
 #card-modal {
