@@ -43,10 +43,23 @@ let profileHandlersReady = false;
 let collectionSearchReady = false;
 let userListenerUnsubscribe = null;
 let collectionListenerUnsubscribe = null;
+let pendingPackSyncInProgress = false;
 
 const LOCAL_SESSION_KEY = 'packdrop:last-session:v2';
 const LAST_SECTION_KEY = 'packdrop:last-section';
-const AUTH_CACHE_DELAY = 1600;
+const PENDING_PACK_SYNC_KEY = 'packdrop:pending-pack-sync:v1';
+const PLAYER_PHOTO_CACHE_KEY = 'packdrop:player-photo-cache:v1';
+const UPDATE_CURRENT_SHA_KEY = 'packdrop:update-current-sha';
+const UPDATE_PENDING_SHA_KEY = 'packdrop:update-pending-sha';
+const UPDATE_IGNORED_UNTIL_KEY = 'packdrop:update-ignored-until';
+const AUTH_CACHE_DELAY = 250;
+const GITHUB_LATEST_COMMIT_URL = 'https://api.github.com/repos/lollo21x/packdrop/commits/main';
+const FOOTBALL_API_HOST = 'v3.football.api-sports.io';
+const FOOTBALL_API_KEY = '048d7f300beea42f42d12638b7a942ea';
+const FOOTBALL_API_DEFAULT_SEASON = 2025;
+let pendingPackSync = loadPendingPackSync();
+let playerPhotoCache = loadPlayerPhotoCache();
+const playerPhotoInFlight = new Set();
 
 // ── DOM References (cached) ──
 const $ = id => document.getElementById(id);
@@ -117,6 +130,131 @@ const NATION_CODES = {
   'Cile': 'cl'
 };
 
+const PLAYER_API_LOOKUP = {
+  star_messi: { search: 'Messi', team: 9568, season: 2025 },
+  star_mbappe: { search: 'Mbappe', team: 541, season: 2025 },
+  star_vinicius: { search: 'Vinicius', team: 541, season: 2025 },
+  star_haaland: { search: 'Haaland', team: 50, season: 2025 },
+  star_bellingham: { search: 'Bellingham', team: 541, season: 2025 },
+  star_yamal: { search: 'Yamal', team: 529, season: 2025 },
+  star_ronaldo: { search: 'Ronaldo', team: 2939, season: 2025 },
+  star_salah: { search: 'Salah', team: 40, season: 2025 },
+  star_kane: { search: 'Kane', team: 157, season: 2025 },
+  star_rodri: { search: 'Rodri', team: 50, season: 2025 },
+  star_pedri: { search: 'Pedri', team: 529, season: 2025 },
+  star_son: { search: 'Son', team: 47, season: 2025 },
+  star_de_bruyne: { search: 'De Bruyne', team: 50, season: 2023 },
+  star_modric: { search: 'Modric', team: 541, season: 2023 },
+  star_musiala: { search: 'Musiala', team: 157, season: 2025 },
+  star_pulisic: { search: 'Pulisic', team: 489, season: 2025 },
+  star_james: { search: 'James Rodriguez', league: 1, season: 2014 },
+  star_nunez: { search: 'Nunez', team: 40, season: 2025 },
+  star_ziyech: { search: 'Ziyech', team: 645, season: 2023 },
+  star_saka: { search: 'Saka', team: 42, season: 2025 },
+  star_reijnders: { search: 'Reijnders', team: 489, season: 2024 },
+  star_gvardiol: { search: 'Gvardiol', team: 50, season: 2025 },
+  star_felix: { search: 'Felix', team: 529, season: 2024 },
+  star_diaz: { search: 'Luis Diaz', team: 40, season: 2025 },
+  star_mitoma: { search: 'Mitoma', team: 51, season: 2025 },
+  star_isak: { search: 'Isak', team: 34, season: 2025 },
+  star_dembele: { search: 'Dembele', team: 85, season: 2025 },
+  star_neuer: { search: 'Neuer', team: 157, season: 2025 },
+  star_david: { search: 'Jonathan David', team: 79, season: 2024 },
+  star_lookman: { search: 'Lookman', team: 499, season: 2025 },
+  star_raul: { search: 'Raul Jimenez', team: 55, season: 2025 },
+  star_schick: { search: 'Schick', team: 168, season: 2025 },
+  star_shaqiri: { search: 'Shaqiri', team: 1616, season: 2023 },
+  star_tierney: { search: 'Tierney', team: 42, season: 2023 },
+  star_calhanoglu: { search: 'Calhanoglu', team: 505, season: 2025 },
+  star_leckie: { search: 'Leckie', league: 1, season: 2022 },
+  star_al_dawsari: { search: 'Al-Dawsari', team: 7011, season: 2025 },
+  star_akram: { search: 'Afif', league: 1, season: 2022 },
+  star_posch: { search: 'Posch', team: 500, season: 2024 },
+  star_dzeko: { search: 'Dzeko', team: 611, season: 2023 },
+  star_wood: { search: 'Chris Wood', team: 65, season: 2025 },
+  star_mahrez: { search: 'Mahrez', team: 2929, season: 2025 },
+  star_kakuta: { search: 'Kakuta', league: 1, season: 2022 },
+  star_shomurodov: { search: 'Shomurodov', team: 497, season: 2024 },
+  star_nazon: { search: 'Nazon', league: 1, season: 2022 },
+  star_estupinan: { search: 'Estupinan', team: 51, season: 2025 },
+  star_almiron: { search: 'Almiron', team: 34, season: 2023 },
+  star_sarr: { search: 'Ismaila Sarr', team: 66, season: 2025 },
+  icon_pele: { search: 'Pele', team: 128, season: 2010 },
+  icon_maradona: { search: 'Maradona', team: 492, season: 2010 },
+  icon_zidane: { search: 'Zidane', team: 541, season: 2010 },
+  icon_ronaldo9: { search: 'Ronaldo', team: 541, season: 2010 },
+  icon_cruyff: { search: 'Cruyff', team: 529, season: 2010 },
+  icon_beckenbauer: { search: 'Beckenbauer', team: 157, season: 2010 },
+  icon_ronaldinho: { search: 'Ronaldinho', team: 529, season: 2010 },
+  icon_henry: { search: 'Henry', team: 42, season: 2011 },
+  icon_figo: { search: 'Figo', team: 541, season: 2010 },
+  icon_eusebio: { search: 'Eusebio', team: 211, season: 2010 },
+  icon_shearer: { search: 'Shearer', team: 34, season: 2010 },
+  icon_gerrard: { search: 'Gerrard', team: 40, season: 2010 },
+  icon_charlton: { search: 'Charlton', team: 33, season: 2010 },
+  icon_roberto_carlos: { search: 'Roberto Carlos', team: 541, season: 2010 },
+  icon_cafu: { search: 'Cafu', team: 489, season: 2010 },
+  icon_ballack: { search: 'Ballack', team: 157, season: 2010 },
+  icon_klose: { search: 'Klose', team: 157, season: 2010 },
+  icon_platini: { search: 'Platini', team: 496, season: 2010 },
+  icon_cantona: { search: 'Cantona', team: 33, season: 2010 },
+  icon_vieira: { search: 'Vieira', team: 42, season: 2010 },
+  icon_seedorf: { search: 'Seedorf', team: 489, season: 2010 },
+  icon_bergkamp: { search: 'Bergkamp', team: 42, season: 2010 },
+  icon_davids: { search: 'Davids', team: 496, season: 2010 },
+  icon_sammer: { search: 'Sammer', team: 165, season: 2010 },
+  icon_matthaus: { search: 'Matthaus', team: 157, season: 2010 },
+  icon_suker: { search: 'Suker', league: 1, season: 2010 },
+  icon_boban: { search: 'Boban', team: 489, season: 2010 },
+  icon_modric_icon: { search: 'Modric', team: 541, season: 2018 },
+  icon_valderrama: { search: 'Valderrama', league: 1, season: 2010 },
+  icon_asprilla: { search: 'Asprilla', league: 1, season: 2010 },
+  icon_larsson: { search: 'Larsson', team: 157, season: 2010 },
+  icon_ibrahimovic: { search: 'Ibrahimovic', team: 489, season: 2010 },
+  icon_weah: { search: 'Weah', team: 489, season: 2010 },
+  icon_drogba: { search: 'Drogba', team: 49, season: 2014 },
+  icon_essien: { search: 'Essien', team: 49, season: 2010 },
+  icon_okocha: { search: 'Okocha', league: 1, season: 2010 },
+  icon_el_hadary: { search: 'El-Hadary', league: 1, season: 2018 },
+  icon_mane_icon: { search: 'Mane', team: 40, season: 2021 },
+  icon_diop: { search: 'Diop', league: 1, season: 2010 },
+  icon_hagi: { search: 'Hagi', league: 1, season: 2010 },
+  icon_nedved: { search: 'Nedved', team: 496, season: 2010 },
+  icon_scholes: { search: 'Scholes', team: 33, season: 2010 },
+  icon_kahn: { search: 'Kahn', team: 157, season: 2010 },
+  icon_nakata: { search: 'Nakata', league: 1, season: 2010 },
+  icon_ahn: { search: 'Ahn Jung-hwan', league: 1, season: 2010 },
+  icon_pak_doik: { search: 'Pak Doo-ik', league: 1, season: 2010 },
+  icon_sanchez: { search: 'Hugo Sanchez', team: 541, season: 2010 },
+  icon_zamorano: { search: 'Zamorano', team: 505, season: 2010 }
+};
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value).replace(/`/g, '&#096;');
+}
+
+function scheduleIdle(callback, timeout = 1500) {
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(callback, { timeout });
+    return;
+  }
+  setTimeout(callback, 0);
+}
+
+function escapeCssIdent(value) {
+  if (window.CSS?.escape) return CSS.escape(value);
+  return String(value).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+}
+
 function getCardInitials(card) {
   const source = card.type === 'team' ? card.nation : (card.subjectName || card.name || card.nation);
   const cleaned = source
@@ -129,16 +267,133 @@ function getCardInitials(card) {
   return parts.slice(0, 2).map(part => part[0]).join('').slice(0, 3).toUpperCase();
 }
 
+function loadPlayerPhotoCache() {
+  try {
+    const raw = localStorage.getItem(PLAYER_PHOTO_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (err) {
+    return {};
+  }
+}
+
+function savePlayerPhotoCache() {
+  try {
+    localStorage.setItem(PLAYER_PHOTO_CACHE_KEY, JSON.stringify(playerPhotoCache));
+  } catch (err) {
+    console.warn('Player photo cache save failed:', err);
+  }
+}
+
+function getPlayerApiMeta(card) {
+  if (!card || card.type === 'team') return null;
+  const configured = PLAYER_API_LOOKUP[card.id] || {};
+  const search = configured.search || (card.subjectName || card.name || '').replace(/\([^)]*\)/g, '').trim();
+  if (!search) return null;
+  return {
+    search,
+    team: configured.team,
+    league: configured.league,
+    season: configured.season || FOOTBALL_API_DEFAULT_SEASON
+  };
+}
+
+function getCachedPlayerPhoto(card) {
+  const cached = playerPhotoCache[card.id];
+  return cached?.photo || '';
+}
+
+function buildPlayerPhotoUrl(card) {
+  const meta = getPlayerApiMeta(card);
+  if (!meta || (!meta.team && !meta.league)) return '';
+  const params = new URLSearchParams({
+    search: meta.search,
+    season: String(meta.season || FOOTBALL_API_DEFAULT_SEASON)
+  });
+  if (meta.team) params.set('team', String(meta.team));
+  else params.set('league', String(meta.league));
+  return `https://${FOOTBALL_API_HOST}/players?${params.toString()}`;
+}
+
+async function fetchPlayerPhoto(card) {
+  const url = buildPlayerPhotoUrl(card);
+  if (!url || !navigator.onLine) return '';
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'x-rapidapi-host': FOOTBALL_API_HOST,
+      'x-rapidapi-key': FOOTBALL_API_KEY
+    }
+  });
+  if (!response.ok) throw new Error(`photo-api-${response.status}`);
+  const data = await response.json();
+  return data?.response?.[0]?.player?.photo || '';
+}
+
+function refreshPlayerPhotoMarks(cardId) {
+  const card = getCardById(cardId);
+  const photo = card ? getCachedPlayerPhoto(card) : '';
+  if (!card || !photo) return;
+  document.querySelectorAll(`[data-player-card-id="${escapeCssIdent(cardId)}"]`).forEach(mark => {
+    mark.classList.add('card-mark-player-photo');
+    mark.classList.remove('card-mark-player-pending');
+    mark.innerHTML = `
+      <img src="${escapeAttr(photo)}" alt="${escapeAttr(card.name)}" class="player-photo-img" loading="lazy" decoding="async">
+      <span class="player-photo-fallback">${getCardInitials(card)}</span>
+    `;
+  });
+}
+
+function queuePlayerPhoto(card) {
+  if (!card || card.type === 'team' || getCachedPlayerPhoto(card) || playerPhotoInFlight.has(card.id)) return;
+  const url = buildPlayerPhotoUrl(card);
+  if (!url) return;
+
+  const cachedFailure = playerPhotoCache[card.id]?.failedAt || 0;
+  if (cachedFailure && Date.now() - cachedFailure < 12 * 60 * 60 * 1000) return;
+
+  playerPhotoInFlight.add(card.id);
+  scheduleIdle(async () => {
+    try {
+      const photo = await fetchPlayerPhoto(card);
+      if (photo) {
+        playerPhotoCache[card.id] = { photo, updatedAt: Date.now() };
+        savePlayerPhotoCache();
+        refreshPlayerPhotoMarks(card.id);
+      } else {
+        playerPhotoCache[card.id] = { failedAt: Date.now() };
+        savePlayerPhotoCache();
+      }
+    } catch (err) {
+      console.warn('Player photo fetch failed:', card.id, err);
+      playerPhotoCache[card.id] = { failedAt: Date.now() };
+      savePlayerPhotoCache();
+    } finally {
+      playerPhotoInFlight.delete(card.id);
+    }
+  }, 2000);
+}
+
 function cardMark(card, className = '') {
   if (card.type === 'team') {
     const code = NATION_CODES[card.nation];
     if (code) {
       const flagUrl = `https://flagcdn.com/w160/${code}.png`;
       return `<span class="card-mark rarity-${card.rarity} ${className} card-mark-flag" aria-hidden="true">
-        <img src="${flagUrl}" alt="${card.nation}" class="flag-img" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+        <img src="${flagUrl}" alt="${escapeAttr(card.nation)}" class="flag-img" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
         <span class="flag-fallback-initials" style="display:none; width:100%; height:100%; place-items:center;">${getCardInitials(card)}</span>
       </span>`;
     }
+  }
+  if (card.type === 'player' || card.type === 'icon') {
+    const photo = getCachedPlayerPhoto(card);
+    if (!photo) queuePlayerPhoto(card);
+    return `<span class="card-mark rarity-${card.rarity} ${className} card-mark-player ${photo ? 'card-mark-player-photo' : 'card-mark-player-pending'}" data-player-card-id="${escapeAttr(card.id)}" aria-hidden="true">
+      ${photo
+        ? `<img src="${escapeAttr(photo)}" alt="${escapeAttr(card.name)}" class="player-photo-img" loading="lazy" decoding="async">`
+        : ''}
+      <span class="player-photo-fallback">${getCardInitials(card)}</span>
+    </span>`;
   }
   return `<span class="card-mark rarity-${card.rarity} ${className}" aria-hidden="true">${getCardInitials(card)}</span>`;
 }
@@ -244,12 +499,25 @@ async function initApp() {
   }
 
   const userRef = db.collection('pd_users').doc(currentUser.uid);
+  const cachedSession = loadLocalSession();
+  const hasMatchingCache = cachedSession?.currentUser?.uid === currentUser.uid && cachedSession?.userData;
+  const appAlreadyVisible = !appEl.classList.contains('hidden');
+
+  if (hasMatchingCache && !appAlreadyVisible) {
+    userData = cachedSession.userData || {};
+    userCollection = cachedSession.userCollection || {};
+    appMode = 'online';
+    loginScreen.classList.add('hidden');
+    onboardingModal.classList.remove('active');
+    showMainApp();
+  }
+
   let userDoc;
   try {
-    userDoc = await withTimeout(userRef.get(), 7000);
+    userDoc = await withTimeout(userRef.get(), hasMatchingCache ? 4500 : 7000);
   } catch (err) {
     console.warn('User load slow/unavailable:', err);
-    if (showCachedApp('Connessione lenta: copia salvata attiva.')) return;
+    if (hasMatchingCache || showCachedApp('Connessione lenta: copia salvata attiva.')) return;
     showToast('Connessione lenta. Riprova tra qualche secondo.');
     loginScreen.classList.remove('hidden');
     return;
@@ -263,8 +531,22 @@ async function initApp() {
 
   userData = userDoc.data();
   await checkDailyReset();
-  await updateLoginStreak();
-  await loadUserCollection();
+  updateLoginStreak().catch(err => console.warn('Login streak sync skipped:', err));
+
+  const collectionLoad = loadUserCollection()
+    .then(() => {
+      saveLocalSession();
+      updateHeaderUI();
+      updatePackButtons();
+      renderChallenges();
+      if ($('section-collection')?.classList.contains('active')) renderCollection(getActiveCollectionTab());
+    })
+    .catch(err => console.warn('Collection load skipped:', err));
+
+  if (!hasMatchingCache && !appAlreadyVisible) {
+    await collectionLoad;
+  }
+
   saveLocalSession();
   ensureCollectionCodes().then(() => {
     saveLocalSession();
@@ -280,9 +562,11 @@ async function initApp() {
   userListenerUnsubscribe = userRef.onSnapshot(doc => {
     if (doc.exists) {
       userData = doc.data();
+      saveLocalSession();
       updateHeaderUI();
       updatePackButtons();
       startTimerIfNeeded();
+      renderChallenges();
     }
   }, err => {
     console.warn('User profile listener error:', err);
@@ -308,6 +592,7 @@ async function initApp() {
   });
 
   showMainApp();
+  syncPendingPackOperations().catch(err => console.warn('Pending pack sync skipped:', err));
 }
 
 function withTimeout(promise, ms) {
@@ -381,6 +666,102 @@ function loadLocalSession() {
   } catch (err) {
     console.warn('Local session load failed:', err);
     return null;
+  }
+}
+
+function loadPendingPackSync() {
+  try {
+    const raw = localStorage.getItem(PENDING_PACK_SYNC_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function savePendingPackSync() {
+  try {
+    localStorage.setItem(PENDING_PACK_SYNC_KEY, JSON.stringify(pendingPackSync));
+  } catch (err) {
+    console.warn('Pending sync save failed:', err);
+  }
+}
+
+function queuePendingPackSync(operation) {
+  if (!operation?.id || pendingPackSync.some(op => op.id === operation.id)) return;
+  pendingPackSync.push(operation);
+  savePendingPackSync();
+}
+
+async function syncPendingPackOperation(operation) {
+  const card = getCardById(operation.cardId);
+  if (!card || !isOnlineApp()) return false;
+
+  const userRef = db.collection('pd_users').doc(currentUser.uid);
+  const collRef = userRef.collection('collection').doc(card.id);
+  const codeRef = db.collection('pd_card_codes').doc(operation.code);
+  const unlockedAt = operation.unlockedAt ? new Date(operation.unlockedAt) : new Date();
+
+  await db.runTransaction(async transaction => {
+    const collSnap = await transaction.get(collRef);
+    const existing = collSnap.exists ? collSnap.data() : null;
+    const alreadySynced = existing && getOwnedCodes(existing).includes(normalizeCardCode(operation.code));
+    if (alreadySynced) return;
+
+    if (existing) {
+      transaction.update(collRef, {
+        count: firebase.firestore.FieldValue.increment(1),
+        primaryCode: getPrimaryCode(existing) || operation.code,
+        latestCode: operation.code,
+        codes: firebase.firestore.FieldValue.arrayUnion(operation.code)
+      });
+    } else {
+      transaction.set(collRef, {
+        cardId: card.id,
+        type: card.type,
+        count: 1,
+        primaryCode: operation.code,
+        latestCode: operation.code,
+        codes: [operation.code],
+        unlockedAt
+      });
+    }
+
+    transaction.set(codeRef, buildPublicCardCodeData(card, operation.code, unlockedAt), { merge: true });
+
+    if (!operation.isWelcome) {
+      const userUpdate = {
+        totalPacksOpened: firebase.firestore.FieldValue.increment(1)
+      };
+      if (operation.balanceSource === 'daily') {
+        userUpdate.dailyPacks = firebase.firestore.FieldValue.increment(-1);
+      } else if (operation.balanceSource === 'bonus') {
+        userUpdate.bonusPacks = firebase.firestore.FieldValue.increment(-1);
+      }
+      transaction.update(userRef, userUpdate);
+    }
+  });
+
+  return true;
+}
+
+async function syncPendingPackOperations() {
+  if (pendingPackSyncInProgress || !pendingPackSync.length || !isOnlineApp()) return;
+  pendingPackSyncInProgress = true;
+  try {
+    const remaining = [];
+    for (const operation of pendingPackSync) {
+      try {
+        await syncPendingPackOperation(operation);
+      } catch (err) {
+        console.warn('Pending pack operation failed:', err);
+        remaining.push(operation);
+      }
+    }
+    pendingPackSync = remaining;
+    savePendingPackSync();
+  } finally {
+    pendingPackSyncInProgress = false;
   }
 }
 
@@ -538,8 +919,10 @@ async function updateLoginStreak() {
 
 async function loadUserCollection() {
   if (!firebaseReady || !db || !currentUser) return;
-  const snapshot = await db.collection('pd_users').doc(currentUser.uid)
-    .collection('collection').get();
+  const snapshot = await withTimeout(
+    db.collection('pd_users').doc(currentUser.uid).collection('collection').get(),
+    6500
+  );
   userCollection = {};
   snapshot.forEach(doc => {
     userCollection[doc.id] = doc.data();
@@ -706,11 +1089,7 @@ function closeProfilePanel() {
 
 function updateHeaderUI() {
   const avatar = $('header-avatar');
-  if (currentUser?.photoURL) {
-    avatar.src = currentUser.photoURL;
-  } else {
-    avatar.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%236366f1"/><text x="50" y="65" text-anchor="middle" fill="white" font-size="40">' + (userData?.displayName?.[0] || '?') + '</text></svg>';
-  }
+  avatar.src = getUserAvatarUrl({ ...userData, photoURL: currentUser?.photoURL || userData?.photoURL });
   // Badge for friend requests
   updateRequestBadge();
 }
@@ -881,16 +1260,20 @@ async function openPack(packType, isWelcome = false) {
   } else {
     card = eligible[Math.floor(Math.random() * eligible.length)];
   }
+  queuePlayerPhoto(card);
   const uid = currentUser?.uid || 'offline-uid';
   const code = generateCardCode(card, uid);
   const unlockedAt = new Date();
+  let balanceSource = null;
 
   // Deduct pack balance locally
   if (!isWelcome && userData) {
     if (userData.dailyPacks > 0) {
       userData.dailyPacks--;
+      balanceSource = 'daily';
     } else if (userData.bonusPacks > 0) {
       userData.bonusPacks--;
+      balanceSource = 'bonus';
     }
     userData.totalPacksOpened = (userData.totalPacksOpened || 0) + 1;
   }
@@ -919,6 +1302,16 @@ async function openPack(packType, isWelcome = false) {
   }
 
   saveLocalSession();
+
+  const pendingOperation = {
+    id: code,
+    cardId: card.id,
+    code,
+    unlockedAt: unlockedAt.toISOString(),
+    isWelcome,
+    balanceSource,
+    createdAt: Date.now()
+  };
 
   // If online, perform background Firestore update
   if (firebaseReady && db && currentUser && appMode === 'online') {
@@ -959,7 +1352,10 @@ async function openPack(packType, isWelcome = false) {
       await batch.commit();
     } catch (fsErr) {
       console.warn('Background Firestore pack update failed:', fsErr);
+      queuePendingPackSync(pendingOperation);
     }
+  } else if (currentUser?.uid) {
+    queuePendingPackSync(pendingOperation);
   }
 
   return card;
@@ -1532,7 +1928,7 @@ function renderCardCodeResult(data) {
   if (!ownerUid || isMine) {
     action = '<span class="result-status">Tua carta</span>';
   } else if (isFriend) {
-    action = '<span class="result-status">Gia amici</span>';
+    action = '<span class="result-status">Già amici</span>';
   } else if (!isOnlineApp()) {
     action = '<span class="result-status">Accedi per inviare richiesta</span>';
   } else {
@@ -1547,14 +1943,14 @@ function renderCardCodeResult(data) {
       </div>
       <div class="code-result-info">
         <div class="code-result-top">
-          <span class="card-unique-code">${normalizeCardCode(data.code)}</span>
+          <span class="card-unique-code">${escapeHtml(normalizeCardCode(data.code))}</span>
           <span class="reveal-rarity-badge" style="background:${meta.color}">${meta.label}</span>
         </div>
-        <h3>${card.name}</h3>
-        <p>${card.nation || data.cardNation || ''}</p>
+        <h3>${escapeHtml(card.name)}</h3>
+        <p>${escapeHtml(card.nation || data.cardNation || '')}</p>
         <div class="code-result-meta">
           <span>${formatDate(data.unlockedAt)}</span>
-          <span>@${data.ownerUsername || 'utente'}</span>
+          <span>@${escapeHtml(data.ownerUsername || 'utente')}</span>
         </div>
         ${action}
       </div>
@@ -1569,8 +1965,8 @@ function renderCardCodeResult(data) {
         await acceptFriendRequest(ownerUid);
         btn.textContent = 'Amico aggiunto';
       } else {
-        await sendFriendRequest(ownerUid);
-        btn.textContent = 'Richiesta inviata';
+        const result = await sendFriendRequest(ownerUid);
+        btn.textContent = result?.status === 'accepted' ? 'Amico aggiunto' : 'Richiesta inviata';
       }
       updateRequestBadge();
     });
@@ -1913,10 +2309,47 @@ async function shareCardImage(card, owned) {
 // 8. PROFILE MODULE
 // ════════════════════════════════════════════════════════════
 
+function getUserAvatarUrl(profile = {}, fallbackSeed = '') {
+  if (profile.photoURL) return profile.photoURL;
+  const label = (profile.displayName || profile.username || fallbackSeed || '?').trim()[0] || '?';
+  const safeLabel = encodeURIComponent(label.toUpperCase());
+  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='50' fill='%2342d392'/%3E%3Ctext x='50' y='62' text-anchor='middle' font-family='Arial' font-size='40' font-weight='700' fill='%2304110c'%3E${safeLabel}%3C/text%3E%3C/svg%3E`;
+}
+
+function uniqueArray(values) {
+  return [...new Set((values || []).filter(Boolean))];
+}
+
+function addUniqueLocal(field, uid) {
+  userData[field] = uniqueArray([...(userData?.[field] || []), uid]);
+}
+
+function removeLocal(field, uid) {
+  userData[field] = (userData?.[field] || []).filter(item => item !== uid);
+}
+
+function getFriendshipId(uidA, uidB) {
+  return [uidA, uidB].sort().join('_');
+}
+
+async function fetchUserProfiles(uids) {
+  if (!isOnlineApp()) return new Map();
+  const unique = uniqueArray(uids);
+  const entries = await Promise.all(unique.map(async uid => {
+    try {
+      const snap = await db.collection('pd_users').doc(uid).get();
+      return snap.exists ? [uid, snap.data()] : null;
+    } catch (err) {
+      return null;
+    }
+  }));
+  return new Map(entries.filter(Boolean));
+}
+
 function renderProfile() {
   // Hero
-  $('profile-avatar').src = currentUser?.photoURL || '';
-  $('profile-name').textContent = userData?.displayName || '';
+  $('profile-avatar').src = getUserAvatarUrl({ ...userData, photoURL: currentUser?.photoURL || userData?.photoURL });
+  $('profile-name').textContent = userData?.displayName || currentUser?.displayName || '';
   $('profile-username').textContent = `@${userData?.username || ''}`;
   const percent = Math.round((Object.keys(userCollection).length / ALL_CARDS.length) * 100);
   $('profile-completion').textContent = `${percent}% completato`;
@@ -1949,24 +2382,31 @@ async function renderFriendsList() {
     return;
   }
 
+  if (!isOnlineApp()) {
+    list.innerHTML = `<div class="empty-state"><p>Amici salvati: ${friends.length}. Dettagli disponibili appena Firebase è collegato.</p></div>`;
+    return;
+  }
+
   list.innerHTML = '';
-  for (const fUid of friends) {
-    try {
-      const fDoc = await db.collection('pd_users').doc(fUid).get();
-      if (!fDoc.exists) continue;
-      const fData = fDoc.data();
-      const item = document.createElement('div');
-      item.className = 'friend-item';
-      item.innerHTML = `
-        <img class="friend-avatar" src="${fData.photoURL || ''}" alt="" loading="lazy">
-        <div class="friend-info">
-          <div class="friend-name">${fData.displayName || ''}</div>
-          <div class="friend-username">@${fData.username || ''}</div>
-        </div>
-        <button class="btn-remove" data-uid="${fUid}">Rimuovi</button>
-      `;
-      list.appendChild(item);
-    } catch (e) { /* skip */ }
+  const profiles = await fetchUserProfiles(friends);
+  friends.forEach(fUid => {
+    const fData = profiles.get(fUid);
+    if (!fData) return;
+    const item = document.createElement('div');
+    item.className = 'friend-item';
+    item.innerHTML = `
+      <img class="friend-avatar" src="${escapeAttr(getUserAvatarUrl(fData, fUid))}" alt="" loading="lazy">
+      <div class="friend-info">
+        <div class="friend-name">${escapeHtml(fData.displayName || 'Utente')}</div>
+        <div class="friend-username">@${escapeHtml(fData.username || 'utente')}</div>
+      </div>
+      <button class="btn-remove" data-uid="${escapeAttr(fUid)}">Rimuovi</button>
+    `;
+    list.appendChild(item);
+  });
+
+  if (!list.children.length) {
+    list.innerHTML = `<div class="empty-state"><p>Amici non caricati. Riprova tra poco.</p></div>`;
   }
 
   // Remove friend handlers
@@ -1990,28 +2430,36 @@ async function renderFriendRequests() {
   }
 
   section.style.display = 'block';
-  list.innerHTML = '';
+  if (!isOnlineApp()) {
+    list.innerHTML = `<div class="empty-state"><p>${requests.length} richiesta in attesa. Accedi online per gestirla.</p></div>`;
+    return;
+  }
 
-  for (const fromUid of requests) {
-    try {
-      const fDoc = await db.collection('pd_users').doc(fromUid).get();
-      if (!fDoc.exists) continue;
-      const fData = fDoc.data();
-      const item = document.createElement('div');
-      item.className = 'request-item';
-      item.innerHTML = `
-        <img class="friend-avatar" src="${fData.photoURL || ''}" alt="" loading="lazy">
-        <div class="friend-info">
-          <div class="friend-name">${fData.displayName || ''}</div>
-          <div class="friend-username">@${fData.username || ''}</div>
-        </div>
-        <div class="request-actions">
-          <button class="btn-accept" data-uid="${fromUid}">Accetta</button>
-          <button class="btn-reject" data-uid="${fromUid}">Rifiuta</button>
-        </div>
-      `;
-      list.appendChild(item);
-    } catch (e) { /* skip */ }
+  list.innerHTML = '';
+  const profiles = await fetchUserProfiles(requests);
+
+  requests.forEach(fromUid => {
+    const fData = profiles.get(fromUid);
+    if (!fData) return;
+    const item = document.createElement('div');
+    item.className = 'request-item';
+    item.innerHTML = `
+      <img class="friend-avatar" src="${escapeAttr(getUserAvatarUrl(fData, fromUid))}" alt="" loading="lazy">
+      <div class="friend-info">
+        <div class="friend-name">${escapeHtml(fData.displayName || 'Utente')}</div>
+        <div class="friend-username">@${escapeHtml(fData.username || 'utente')}</div>
+      </div>
+      <div class="request-actions">
+        <button class="btn-accept" data-uid="${escapeAttr(fromUid)}">Accetta</button>
+        <button class="btn-reject" data-uid="${escapeAttr(fromUid)}">Rifiuta</button>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+
+  if (!list.children.length) {
+    section.style.display = 'none';
+    return;
   }
 
   list.querySelectorAll('.btn-accept').forEach(btn => {
@@ -2046,7 +2494,7 @@ function setupProfileHandlers() {
 }
 
 async function searchUser() {
-  const username = $('search-username').value.trim().toLowerCase();
+  const username = $('search-username').value.trim().toLowerCase().replace(/^@+/, '');
   const resultEl = $('search-result');
   if (!username) { resultEl.innerHTML = ''; return; }
   if (!isOnlineApp()) {
@@ -2083,25 +2531,27 @@ async function searchUser() {
 
     resultEl.innerHTML = `
       <div class="search-result">
-        <img class="friend-avatar" src="${u.photoURL || ''}" alt="" loading="lazy">
+        <img class="friend-avatar" src="${escapeAttr(getUserAvatarUrl(u, targetUid))}" alt="" loading="lazy">
         <div class="search-result-info">
-          <div class="friend-name">${u.displayName || ''}</div>
-          <div class="friend-username">@${u.username || ''}</div>
+          <div class="friend-name">${escapeHtml(u.displayName || 'Utente')}</div>
+          <div class="friend-username">@${escapeHtml(u.username || 'utente')}</div>
         </div>
-        <button class="btn-add-friend" id="btn-add-found" data-uid="${targetUid}" ${btnDisabled ? 'disabled' : ''}>${btnText}</button>
+        <button class="btn-add-friend" id="btn-add-found" data-uid="${escapeAttr(targetUid)}" ${btnDisabled ? 'disabled' : ''}>${btnText}</button>
       </div>
     `;
 
     const addBtn = $('btn-add-found');
     if (!btnDisabled) {
       addBtn.addEventListener('click', async () => {
+        let result = null;
         if (isReceived) {
           await acceptFriendRequest(targetUid);
+          result = { status: 'accepted' };
         } else {
-          await sendFriendRequest(targetUid);
+          result = await sendFriendRequest(targetUid);
         }
         addBtn.disabled = true;
-        addBtn.textContent = isReceived ? 'Amico aggiunto' : 'Richiesta inviata';
+        addBtn.textContent = result?.status === 'accepted' ? 'Amico aggiunto' : 'Richiesta inviata';
         renderFriendRequests();
         renderFriendsList();
         updateRequestBadge();
@@ -2120,18 +2570,77 @@ async function searchUser() {
 async function sendFriendRequest(targetUid) {
   if (!isOnlineApp()) {
     showToast('Accedi online per inviare richieste.');
-    return;
+    return { status: 'offline' };
   }
-  const batch = db.batch();
+  if (!targetUid || targetUid === currentUser.uid) {
+    showToast('Non puoi aggiungere te stesso.');
+    return { status: 'self' };
+  }
+
   const myRef = db.collection('pd_users').doc(currentUser.uid);
   const theirRef = db.collection('pd_users').doc(targetUid);
+  const requestRef = db.collection('pd_friend_requests').doc(getFriendshipId(currentUser.uid, targetUid));
 
-  batch.update(myRef, { sentRequests: firebase.firestore.FieldValue.arrayUnion(targetUid) });
-  batch.update(theirRef, { friendRequests: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) });
-  await batch.commit();
+  const result = await db.runTransaction(async transaction => {
+    const [mySnap, requestSnap] = await Promise.all([
+      transaction.get(myRef),
+      transaction.get(requestRef)
+    ]);
+    const myData = mySnap.exists ? mySnap.data() : {};
+    if ((myData.friends || []).includes(targetUid)) return { status: 'accepted' };
 
-  userData.sentRequests = [...(userData.sentRequests || []), targetUid];
-  showToast('Richiesta inviata.');
+    if (requestSnap.exists) {
+      const request = requestSnap.data();
+      if (request.status === 'accepted') return { status: 'accepted' };
+      if (request.status === 'pending') {
+        if (request.to === currentUser.uid && request.from === targetUid) {
+          transaction.update(requestRef, {
+            status: 'accepted',
+            acceptedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          transaction.update(myRef, {
+            friends: firebase.firestore.FieldValue.arrayUnion(targetUid),
+            friendRequests: firebase.firestore.FieldValue.arrayRemove(targetUid)
+          });
+          transaction.update(theirRef, {
+            friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
+            sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+          });
+          return { status: 'accepted' };
+        }
+        return { status: 'pending' };
+      }
+    }
+
+    transaction.set(requestRef, {
+      from: currentUser.uid,
+      fromUsername: userData?.username || '',
+      to: targetUid,
+      toUsername: '',
+      status: 'pending',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    transaction.update(myRef, { sentRequests: firebase.firestore.FieldValue.arrayUnion(targetUid) });
+    transaction.update(theirRef, { friendRequests: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) });
+    return { status: 'created' };
+  });
+
+  if (result.status === 'accepted') {
+    addUniqueLocal('friends', targetUid);
+    removeLocal('friendRequests', targetUid);
+    removeLocal('sentRequests', targetUid);
+    showToast('Amicizia accettata.');
+  } else if (result.status === 'pending') {
+    addUniqueLocal('sentRequests', targetUid);
+    showToast('Richiesta già inviata.');
+  } else if (result.status === 'created') {
+    addUniqueLocal('sentRequests', targetUid);
+    showToast('Richiesta inviata.');
+  }
+  saveLocalSession();
+  return result;
 }
 
 async function acceptFriendRequest(fromUid) {
@@ -2139,37 +2648,66 @@ async function acceptFriendRequest(fromUid) {
     showToast('Accedi online per accettare richieste.');
     return;
   }
-  const batch = db.batch();
   const myRef = db.collection('pd_users').doc(currentUser.uid);
   const theirRef = db.collection('pd_users').doc(fromUid);
+  const requestRef = db.collection('pd_friend_requests').doc(getFriendshipId(currentUser.uid, fromUid));
 
-  // Add to friends
-  batch.update(myRef, {
-    friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
-    friendRequests: firebase.firestore.FieldValue.arrayRemove(fromUid)
-  });
-  batch.update(theirRef, {
-    friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
-    sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
-  });
-  await batch.commit();
+  await db.runTransaction(async transaction => {
+    const requestSnap = await transaction.get(requestRef);
+    if (requestSnap.exists) {
+      const request = requestSnap.data();
+      if (request.status === 'pending' && request.to !== currentUser.uid) {
+        throw new Error('Richiesta non valida.');
+      }
+      if (request.status !== 'accepted') {
+        transaction.update(requestRef, {
+          status: 'accepted',
+          acceptedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+    } else {
+      transaction.set(requestRef, {
+        from: fromUid,
+        to: currentUser.uid,
+        status: 'accepted',
+        acceptedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
 
-  userData.friends = [...(userData.friends || []), fromUid];
-  userData.friendRequests = (userData.friendRequests || []).filter(u => u !== fromUid);
+    transaction.update(myRef, {
+      friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
+      friendRequests: firebase.firestore.FieldValue.arrayRemove(fromUid)
+    });
+    transaction.update(theirRef, {
+      friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
+      sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+    });
+  });
+
+  addUniqueLocal('friends', fromUid);
+  removeLocal('friendRequests', fromUid);
+  removeLocal('sentRequests', fromUid);
+  saveLocalSession();
   showToast('Amicizia accettata.');
 }
 
 async function rejectFriendRequest(fromUid) {
   if (!isOnlineApp()) return;
-  const batch = db.batch();
   const myRef = db.collection('pd_users').doc(currentUser.uid);
   const theirRef = db.collection('pd_users').doc(fromUid);
+  const requestRef = db.collection('pd_friend_requests').doc(getFriendshipId(currentUser.uid, fromUid));
 
+  const batch = db.batch();
   batch.update(myRef, { friendRequests: firebase.firestore.FieldValue.arrayRemove(fromUid) });
   batch.update(theirRef, { sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) });
+  batch.delete(requestRef);
   await batch.commit();
 
-  userData.friendRequests = (userData.friendRequests || []).filter(u => u !== fromUid);
+  removeLocal('friendRequests', fromUid);
+  saveLocalSession();
+  showToast('Richiesta rifiutata.');
 }
 
 async function removeFriend(friendUid) {
@@ -2180,12 +2718,19 @@ async function removeFriend(friendUid) {
   const batch = db.batch();
   const myRef = db.collection('pd_users').doc(currentUser.uid);
   const theirRef = db.collection('pd_users').doc(friendUid);
+  const requestRef = db.collection('pd_friend_requests').doc(getFriendshipId(currentUser.uid, friendUid));
 
   batch.update(myRef, { friends: firebase.firestore.FieldValue.arrayRemove(friendUid) });
   batch.update(theirRef, { friends: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) });
+  batch.set(requestRef, {
+    status: 'removed',
+    removedBy: currentUser.uid,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
   await batch.commit();
 
-  userData.friends = (userData.friends || []).filter(u => u !== friendUid);
+  removeLocal('friends', friendUid);
+  saveLocalSession();
   showToast('Amico rimosso.');
 }
 
@@ -2319,6 +2864,10 @@ function renderChallenges() {
 }
 
 async function checkAllChallenges() {
+  if (!isOnlineApp()) {
+    renderChallenges();
+    return;
+  }
   const completed = userData?.completedChallenges || [];
   let awarded = 0;
 
@@ -2353,11 +2902,118 @@ async function checkAllChallenges() {
 
 // Service Worker registration
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => {
-      console.warn('SW registration failed:', err);
-    });
+  let swReloading = false;
+  const hadServiceWorkerController = Boolean(navigator.serviceWorker.controller);
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadServiceWorkerController || swReloading) return;
+    swReloading = true;
+    window.location.reload();
   });
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => {
+        reg.update().catch(() => {});
+        scheduleIdle(checkForAppUpdates, 4000);
+      })
+      .catch(err => {
+        console.warn('SW registration failed:', err);
+        scheduleIdle(checkForAppUpdates, 5000);
+      });
+  });
+} else {
+  window.addEventListener('load', () => scheduleIdle(checkForAppUpdates, 5000));
+}
+
+async function checkForAppUpdates() {
+  try {
+    const ignoredUntil = Number(localStorage.getItem(UPDATE_IGNORED_UNTIL_KEY) || 0);
+    if (ignoredUntil && Date.now() < ignoredUntil) return;
+
+    const response = await fetch(GITHUB_LATEST_COMMIT_URL, {
+      cache: 'no-store',
+      headers: { Accept: 'application/vnd.github+json' }
+    });
+    if (!response.ok) return;
+
+    const data = await response.json();
+    const latestSha = data?.sha;
+    if (!latestSha) return;
+
+    const currentSha = localStorage.getItem(UPDATE_CURRENT_SHA_KEY);
+    if (!currentSha) {
+      localStorage.setItem(UPDATE_CURRENT_SHA_KEY, latestSha);
+      return;
+    }
+
+    if (latestSha === currentSha) {
+      localStorage.removeItem(UPDATE_PENDING_SHA_KEY);
+      return;
+    }
+
+    localStorage.setItem(UPDATE_PENDING_SHA_KEY, latestSha);
+    showUpdatePrompt(latestSha);
+  } catch (err) {
+    console.warn('Update check unavailable:', err);
+  }
+}
+
+function hideUpdatePrompt() {
+  const prompt = $('update-prompt');
+  if (!prompt) return;
+  prompt.classList.remove('active');
+  prompt.setAttribute('aria-hidden', 'true');
+}
+
+function showUpdatePrompt(latestSha) {
+  const prompt = $('update-prompt');
+  const confirmBtn = $('btn-update-confirm');
+  const dismissBtn = $('btn-update-dismiss');
+  if (!prompt || !confirmBtn || !dismissBtn) return;
+
+  prompt.classList.add('active');
+  prompt.setAttribute('aria-hidden', 'false');
+
+  dismissBtn.onclick = () => {
+    localStorage.setItem(UPDATE_IGNORED_UNTIL_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    hideUpdatePrompt();
+  };
+
+  prompt.onclick = event => {
+    if (event.target === prompt) {
+      localStorage.setItem(UPDATE_IGNORED_UNTIL_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+      hideUpdatePrompt();
+    }
+  };
+
+  confirmBtn.onclick = async () => {
+    confirmBtn.disabled = true;
+    confirmBtn.classList.add('loading');
+    confirmBtn.textContent = 'Aggiorno...';
+    await applyAppUpdate(latestSha);
+  };
+}
+
+async function applyAppUpdate(latestSha) {
+  try {
+    localStorage.setItem(UPDATE_CURRENT_SHA_KEY, latestSha);
+    localStorage.removeItem(UPDATE_PENDING_SHA_KEY);
+    localStorage.removeItem(UPDATE_IGNORED_UNTIL_KEY);
+
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(key => caches.delete(key)));
+    }
+
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(reg => reg.unregister()));
+    }
+  } catch (err) {
+    console.warn('Cache cleanup partial:', err);
+  } finally {
+    window.location.reload();
+  }
 }
 
 // Install prompt
