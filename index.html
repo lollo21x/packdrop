@@ -185,7 +185,7 @@
         <div class="tutorial-slide">
           <div class="tutorial-icon"><svg class="icon"><use href="#icon-collection"></use></svg></div>
           <h3>Completa la collezione</h3>
-          <p>144 carte da collezionare: Comuni, Rare, Epiche e Leggendarie.</p>
+          <p>220 carte da collezionare: Comuni, Rare, Epiche e Leggendarie.</p>
         </div>
         <div class="tutorial-slide">
           <div class="tutorial-icon"><svg class="icon"><use href="#icon-users"></use></svg></div>
@@ -276,7 +276,7 @@
         <div class="collection-header">
           <div class="progress-wrapper">
             <div class="progress-text">
-              <span id="collection-count">0 / 144 carte</span>
+              <span id="collection-count">0 / 220 carte</span>
               <span id="collection-percent">0%</span>
             </div>
             <div class="progress-bar-bg">
@@ -302,96 +302,28 @@
           </button>
           <button class="tab-pill" data-tab="stars" style="--tab-accent:#38bdf8">
             <span class="tab-label"><svg class="icon"><use href="#icon-star"></use></svg>Giocatori</span>
-            <span class="tab-count" id="tab-count-stars">0/48</span>
+            <span class="tab-count" id="tab-count-stars">0/76</span>
           </button>
           <button class="tab-pill" data-tab="legends" style="--tab-accent:#f8c35a">
             <span class="tab-label"><svg class="icon"><use href="#icon-trophy"></use></svg>Leggende</span>
-            <span class="tab-count" id="tab-count-legends">0/48</span>
+            <span class="tab-count" id="tab-count-legends">0/96</span>
           </button>
         </div>
         <div id="collection-grid" class="card-grid"></div>
       </div>
 
-      <!-- ── PROFILE PANEL ── -->
+      <!-- ── PROFILE PANEL (Standalone Screen) ── -->
       <div id="profile-panel" class="profile-panel" aria-hidden="true">
-        <div class="profile-panel-overlay" id="profile-panel-overlay"></div>
+        
+        <!-- Identical header to app-header for safe-area alignment -->
+        <header id="profile-header" class="app-header">
+          <span class="header-logo">Profilo</span>
+          <button id="profile-close" class="header-profile-btn" aria-label="Chiudi profilo">
+            <svg class="icon" style="width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;"><use href="#icon-x"></use></svg>
+          </button>
+        </header>
+
         <div class="profile-panel-content" role="dialog" aria-modal="true" aria-label="Profilo">
-          <button id="profile-close" class="modal-close profile-close" aria-label="Chiudi profilo">
-            <svg class="icon"><use href="#icon-x"></use></svg>
-          </button>
-        <!-- Hero -->
-        <div class="profile-hero">
-          <img id="profile-avatar" class="profile-avatar" src="" alt="Avatar">
-          <div id="profile-name" class="profile-name"></div>
-          <div id="profile-username" class="profile-username"></div>
-          <div id="profile-completion" class="profile-completion">0% completato</div>
-        </div>
-
-        <!-- Stats -->
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon"><svg class="icon"><use href="#icon-package"></use></svg></div>
-            <div class="stat-value" id="stat-packs">0</div>
-            <div class="stat-label">Pacchetti aperti</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon"><svg class="icon"><use href="#icon-cards"></use></svg></div>
-            <div class="stat-value" id="stat-cards">0</div>
-            <div class="stat-label">Carte sbloccate</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon"><svg class="icon"><use href="#icon-sparkle"></use></svg></div>
-            <div class="stat-value" id="stat-legendary">0</div>
-            <div class="stat-label">Leggendarie</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon"><svg class="icon"><use href="#icon-check"></use></svg></div>
-            <div class="stat-value" id="stat-challenges">0</div>
-            <div class="stat-label">Sfide completate</div>
-          </div>
-        </div>
-
-        <!-- Friends -->
-        <div class="friends-section">
-          <h2 class="section-title">Amici</h2>
-          <div id="friends-list"></div>
-        </div>
-
-        <div class="divider" style="margin:16px"></div>
-
-        <!-- Search User -->
-        <div class="search-section">
-          <h2 class="section-title">Cerca utente</h2>
-          <div class="search-input-wrap">
-            <input id="search-username" class="search-input" type="text" placeholder="Username..." autocomplete="off" autocapitalize="off" spellcheck="false">
-            <button id="btn-search-user" class="btn-search">Cerca</button>
-          </div>
-          <div id="search-result"></div>
-        </div>
-
-        <!-- Friend Requests -->
-        <div class="friends-section" id="requests-section" style="display:none">
-          <h2 class="section-title">Richieste in arrivo</h2>
-          <div id="requests-list"></div>
-        </div>
-
-        <div class="divider" style="margin:16px"></div>
-
-        <!-- Invite -->
-        <div style="padding:0 16px">
-          <button id="btn-invite" class="btn-invite">
-            <svg class="icon"><use href="#icon-share"></use></svg>
-            <span>Invita amici</span>
-          </button>
-        </div>
-
-        <div class="profile-reset-wrap">
-          <button id="btn-reset-progress" class="btn-reset-progress" type="button">
-            <svg class="icon"><use href="#icon-zap"></use></svg>
-            <span>Reset progressi</span>
-          </button>
-          <p class="profile-reset-hint">Cancella progressi locali e dati sincronizzati su Firebase.</p>
-        </div>
         </div>
       </div>
 
