@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>PackDrop WC26 | Colleziona Carte del Mondiale</title>
+  <title>PackDrop | Collezione carte</title>
   <meta name="description" content="Colleziona carte del Mondiale 2026! Apri pacchetti, trova carte Leggendarie, completa la tua collezione FIFA World Cup.">
   <meta name="theme-color" content="#07120f">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -465,16 +465,35 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- UPDATE PROMPT                                          -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="update-prompt" class="update-prompt" aria-hidden="true">
+    <div class="update-sheet" role="dialog" aria-modal="true" aria-labelledby="update-title">
+      <div class="update-icon" aria-hidden="true">
+        <svg class="icon"><use href="#icon-zap"></use></svg>
+      </div>
+      <div class="update-copy">
+        <h3 id="update-title">Aggiornamento disponibile</h3>
+        <p>Puoi installarlo ora senza perdere dati, carte o accesso.</p>
+      </div>
+      <div class="update-actions">
+        <button id="btn-update-dismiss" class="btn-update-secondary" type="button">Più tardi</button>
+        <button id="btn-update-confirm" class="btn-update-primary" type="button">Aggiorna</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
   <!-- FIREBASE SDK (Compat — lightweight, CDN-hosted)        -->
   <!-- ═══════════════════════════════════════════════════════ -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
   <!-- App Scripts -->
-  <script src="firebase-config.js"></script>
-  <script src="cards-data.js"></script>
-  <script src="app.js"></script>
+  <script defer src="firebase-config.js"></script>
+  <script defer src="cards-data.js"></script>
+  <script defer src="app.js"></script>
 
   <script>
     (() => {
@@ -587,6 +606,20 @@
               } catch (err) {
                 console.error('Error cleaning up relationships:', err);
               }
+            }
+
+            // 2b. Delete canonical friend request documents involving this user
+            try {
+              const outgoingReqs = await db.collection('pd_friend_requests').where('from', '==', uid).get();
+              const incomingReqs = await db.collection('pd_friend_requests').where('to', '==', uid).get();
+              const deleteFriendReqs = [];
+              outgoingReqs.forEach((doc) => deleteFriendReqs.push(doc.ref.delete()));
+              incomingReqs.forEach((doc) => deleteFriendReqs.push(doc.ref.delete()));
+              if (deleteFriendReqs.length > 0) {
+                await Promise.all(deleteFriendReqs);
+              }
+            } catch (err) {
+              console.error('Error deleting friend request documents:', err);
             }
 
             // 3. Delete subcollection 'collection' under pd_users/${uid}
