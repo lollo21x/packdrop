@@ -3,7 +3,7 @@
 // App shell first, background refresh, data-safe updates
 // ============================================================
 
-const CACHE_NAME = 'packdrop-v8';
+const CACHE_NAME = 'packdrop-v1.1';
 
 const CORE_ASSETS = [
   './',
