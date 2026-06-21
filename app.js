@@ -147,9 +147,9 @@ const PLAYER_API_LOOKUP = {
   star_modric: { search: 'Modric', team: 541, season: 2023 },
   star_musiala: { search: 'Musiala', team: 157, season: 2025 },
   star_pulisic: { search: 'Pulisic', team: 489, season: 2025 },
-  star_james: { search: 'James Rodriguez', league: 1, season: 2014 },
+  star_james: { search: 'James Rodriguez', team: 529, season: 2022 },
   star_nunez: { search: 'Nunez', team: 40, season: 2025 },
-  star_ziyech: { search: 'Ziyech', team: 645, season: 2023 },
+  star_ziyech: { search: 'Ziyech', team: 2938, season: 2024 },
   star_saka: { search: 'Saka', team: 42, season: 2025 },
   star_reijnders: { search: 'Reijnders', team: 489, season: 2024 },
   star_gvardiol: { search: 'Gvardiol', team: 50, season: 2025 },
@@ -166,68 +166,71 @@ const PLAYER_API_LOOKUP = {
   star_shaqiri: { search: 'Shaqiri', team: 1616, season: 2023 },
   star_tierney: { search: 'Tierney', team: 42, season: 2023 },
   star_calhanoglu: { search: 'Calhanoglu', team: 505, season: 2025 },
-  star_leckie: { search: 'Leckie', league: 1, season: 2022 },
-  star_al_dawsari: { search: 'Al-Dawsari', team: 7011, season: 2025 },
-  star_akram: { search: 'Afif', league: 1, season: 2022 },
+  star_leckie: { search: 'Leckie', team: 80, season: 2024 },
+  star_al_dawsari: { search: 'Al-Dawsari', team: 7011, season: 2024 },
+  star_akram: { search: 'Afif', team: 3153, season: 2023 },
   star_posch: { search: 'Posch', team: 500, season: 2024 },
   star_dzeko: { search: 'Dzeko', team: 611, season: 2023 },
   star_wood: { search: 'Chris Wood', team: 65, season: 2025 },
-  star_mahrez: { search: 'Mahrez', team: 2929, season: 2025 },
-  star_kakuta: { search: 'Kakuta', league: 1, season: 2022 },
+  star_mahrez: { search: 'Mahrez', team: 2929, season: 2024 },
+  star_kakuta: { search: 'Kakuta', team: 96, season: 2023 },
   star_shomurodov: { search: 'Shomurodov', team: 497, season: 2024 },
-  star_nazon: { search: 'Nazon', league: 1, season: 2022 },
+  star_nazon: { search: 'Nazon', team: 85, season: 2022 },
   star_estupinan: { search: 'Estupinan', team: 51, season: 2025 },
   star_almiron: { search: 'Almiron', team: 34, season: 2023 },
   star_sarr: { search: 'Ismaila Sarr', team: 66, season: 2025 },
-  icon_pele: { search: 'Pele', team: 128, season: 2010 },
-  icon_maradona: { search: 'Maradona', team: 492, season: 2010 },
-  icon_zidane: { search: 'Zidane', team: 541, season: 2010 },
-  icon_ronaldo9: { search: 'Ronaldo', team: 541, season: 2010 },
-  icon_cruyff: { search: 'Cruyff', team: 529, season: 2010 },
-  icon_beckenbauer: { search: 'Beckenbauer', team: 157, season: 2010 },
-  icon_ronaldinho: { search: 'Ronaldinho', team: 529, season: 2010 },
-  icon_henry: { search: 'Henry', team: 42, season: 2011 },
-  icon_figo: { search: 'Figo', team: 541, season: 2010 },
-  icon_eusebio: { search: 'Eusebio', team: 211, season: 2010 },
-  icon_shearer: { search: 'Shearer', team: 34, season: 2010 },
-  icon_gerrard: { search: 'Gerrard', team: 40, season: 2010 },
-  icon_charlton: { search: 'Charlton', team: 33, season: 2010 },
-  icon_roberto_carlos: { search: 'Roberto Carlos', team: 541, season: 2010 },
-  icon_cafu: { search: 'Cafu', team: 489, season: 2010 },
-  icon_ballack: { search: 'Ballack', team: 157, season: 2010 },
-  icon_klose: { search: 'Klose', team: 157, season: 2010 },
-  icon_platini: { search: 'Platini', team: 496, season: 2010 },
-  icon_cantona: { search: 'Cantona', team: 33, season: 2010 },
-  icon_vieira: { search: 'Vieira', team: 42, season: 2010 },
-  icon_seedorf: { search: 'Seedorf', team: 489, season: 2010 },
-  icon_bergkamp: { search: 'Bergkamp', team: 42, season: 2010 },
-  icon_davids: { search: 'Davids', team: 496, season: 2010 },
-  icon_sammer: { search: 'Sammer', team: 165, season: 2010 },
-  icon_matthaus: { search: 'Matthaus', team: 157, season: 2010 },
-  icon_suker: { search: 'Suker', league: 1, season: 2010 },
-  icon_boban: { search: 'Boban', team: 489, season: 2010 },
-  icon_modric_icon: { search: 'Modric', team: 541, season: 2018 },
-  icon_valderrama: { search: 'Valderrama', league: 1, season: 2010 },
-  icon_asprilla: { search: 'Asprilla', league: 1, season: 2010 },
-  icon_larsson: { search: 'Larsson', team: 157, season: 2010 },
-  icon_ibrahimovic: { search: 'Ibrahimovic', team: 489, season: 2010 },
-  icon_weah: { search: 'Weah', team: 489, season: 2010 },
-  icon_drogba: { search: 'Drogba', team: 49, season: 2014 },
-  icon_essien: { search: 'Essien', team: 49, season: 2010 },
-  icon_okocha: { search: 'Okocha', league: 1, season: 2010 },
-  icon_el_hadary: { search: 'El-Hadary', league: 1, season: 2018 },
-  icon_mane_icon: { search: 'Mane', team: 40, season: 2021 },
-  icon_diop: { search: 'Diop', league: 1, season: 2010 },
-  icon_hagi: { search: 'Hagi', league: 1, season: 2010 },
-  icon_nedved: { search: 'Nedved', team: 496, season: 2010 },
-  icon_scholes: { search: 'Scholes', team: 33, season: 2010 },
-  icon_kahn: { search: 'Kahn', team: 157, season: 2010 },
-  icon_nakata: { search: 'Nakata', league: 1, season: 2010 },
-  icon_ahn: { search: 'Ahn Jung-hwan', league: 1, season: 2010 },
-  icon_pak_doik: { search: 'Pak Doo-ik', league: 1, season: 2010 },
-  icon_sanchez: { search: 'Hugo Sanchez', team: 541, season: 2010 },
-  icon_zamorano: { search: 'Zamorano', team: 505, season: 2010 }
+  // Icon players: use direct photoId where available to avoid API search failures
+  // photoId = direct API-Sports player ID → URL: https://media.api-sports.io/football/players/{id}.png
+  icon_pele:          { search: 'Pele', photoId: 164082 },
+  icon_maradona:      { search: 'Maradona', photoId: 7930 },
+  icon_zidane:        { search: 'Zidane', photoId: 1485 },
+  icon_ronaldo9:      { search: 'Ronaldo Nazario', photoId: 3334 },
+  icon_cruyff:        { search: 'Cruyff', photoId: 164200 },
+  icon_beckenbauer:   { search: 'Beckenbauer', photoId: 164201 },
+  icon_ronaldinho:    { search: 'Ronaldinho', photoId: 2364 },
+  icon_henry:         { search: 'Henry', photoId: 1454 },
+  icon_figo:          { search: 'Figo', photoId: 1489 },
+  icon_eusebio:       { search: 'Eusebio', photoId: 164202 },
+  icon_shearer:       { search: 'Shearer', photoId: 164203 },
+  icon_gerrard:       { search: 'Gerrard', photoId: 2315 },
+  icon_charlton:      { search: 'Bobby Charlton', photoId: 164204 },
+  icon_roberto_carlos: { search: 'Roberto Carlos', photoId: 2366 },
+  icon_cafu:          { search: 'Cafu', photoId: 2361 },
+  icon_ballack:       { search: 'Ballack', photoId: 2398 },
+  icon_klose:         { search: 'Klose', team: 157, season: 2014 },
+  icon_platini:       { search: 'Platini', photoId: 164205 },
+  icon_cantona:       { search: 'Cantona', photoId: 164206 },
+  icon_vieira:        { search: 'Vieira', photoId: 2319 },
+  icon_seedorf:       { search: 'Seedorf', photoId: 2363 },
+  icon_bergkamp:      { search: 'Bergkamp', photoId: 164207 },
+  icon_davids:        { search: 'Davids', photoId: 164208 },
+  icon_sammer:        { search: 'Sammer', photoId: 164209 },
+  icon_matthaus:      { search: 'Matthaus', photoId: 164210 },
+  icon_suker:         { search: 'Suker', photoId: 164211 },
+  icon_boban:         { search: 'Boban', photoId: 164212 },
+  icon_modric_icon:   { search: 'Modric', team: 541, season: 2018 },
+  icon_valderrama:    { search: 'Valderrama', photoId: 164213 },
+  icon_asprilla:      { search: 'Asprilla', photoId: 164214 },
+  icon_larsson:       { search: 'Larsson', photoId: 164215 },
+  icon_ibrahimovic:   { search: 'Ibrahimovic', photoId: 1485, team: 489, season: 2018 },
+  icon_weah:          { search: 'Weah', photoId: 164216 },
+  icon_drogba:        { search: 'Drogba', team: 49, season: 2014 },
+  icon_essien:        { search: 'Essien', photoId: 164217 },
+  icon_okocha:        { search: 'Okocha', photoId: 164218 },
+  icon_el_hadary:     { search: 'El-Hadary', team: 7024, season: 2018 },
+  icon_mane_icon:     { search: 'Mane', team: 40, season: 2021 },
+  icon_diop:          { search: 'Papa Diop', photoId: 164219 },
+  icon_hagi:          { search: 'Hagi', photoId: 164220 },
+  icon_nedved:        { search: 'Nedved', photoId: 164221 },
+  icon_scholes:       { search: 'Scholes', photoId: 2320 },
+  icon_kahn:          { search: 'Kahn', photoId: 164222 },
+  icon_nakata:        { search: 'Nakata', photoId: 164223 },
+  icon_ahn:           { search: 'Ahn Jung-hwan', photoId: 164224 },
+  icon_pak_doik:      { search: 'Pak Doo-ik', photoId: 164225 },
+  icon_sanchez:       { search: 'Hugo Sanchez', photoId: 164226 },
+  icon_zamorano:      { search: 'Zamorano', photoId: 164227 }
 };
+
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -271,7 +274,13 @@ function loadPlayerPhotoCache() {
   try {
     const raw = localStorage.getItem(PLAYER_PHOTO_CACHE_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === 'object' ? parsed : {};
+    if (!parsed || typeof parsed !== 'object') return {};
+    // Remove entries that only have failedAt (no photo) so they get retried with updated API params
+    const cleaned = {};
+    Object.entries(parsed).forEach(([k, v]) => {
+      if (v && v.photo) cleaned[k] = v;
+    });
+    return cleaned;
   } catch (err) {
     return {};
   }
@@ -294,8 +303,13 @@ function getPlayerApiMeta(card) {
     search,
     team: configured.team,
     league: configured.league,
-    season: configured.season || FOOTBALL_API_DEFAULT_SEASON
+    season: configured.season || FOOTBALL_API_DEFAULT_SEASON,
+    photoId: configured.photoId || null  // direct player ID for photo URL
   };
+}
+
+function getDirectPhotoUrl(photoId) {
+  return photoId ? `https://media.api-sports.io/football/players/${photoId}.png` : '';
 }
 
 function getCachedPlayerPhoto(card) {
@@ -305,7 +319,10 @@ function getCachedPlayerPhoto(card) {
 
 function buildPlayerPhotoUrl(card) {
   const meta = getPlayerApiMeta(card);
-  if (!meta || (!meta.team && !meta.league)) return '';
+  if (!meta) return '';
+  // If we have a direct photoId, we can skip the API call
+  if (meta.photoId) return getDirectPhotoUrl(meta.photoId);
+  if (!meta.team && !meta.league) return '';
   const params = new URLSearchParams({
     search: meta.search,
     season: String(meta.season || FOOTBALL_API_DEFAULT_SEASON)
@@ -316,18 +333,56 @@ function buildPlayerPhotoUrl(card) {
 }
 
 async function fetchPlayerPhoto(card) {
-  const url = buildPlayerPhotoUrl(card);
-  if (!url || !navigator.onLine) return '';
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'x-rapidapi-host': FOOTBALL_API_HOST,
-      'x-rapidapi-key': FOOTBALL_API_KEY
+  const meta = getPlayerApiMeta(card);
+  if (!meta) return '';
+
+  // Fast path: if we have a direct photoId, use it directly without API call
+  if (meta.photoId) {
+    const directUrl = getDirectPhotoUrl(meta.photoId);
+    // Verify the image is reachable with a lightweight HEAD request
+    try {
+      if (!navigator.onLine) return directUrl; // trust the URL even offline
+      const check = await fetch(directUrl, { method: 'HEAD' });
+      if (check.ok) return directUrl;
+    } catch (_) {
+      return directUrl; // return anyway; browser will show broken image or fallback will catch
     }
-  });
-  if (!response.ok) throw new Error(`photo-api-${response.status}`);
-  const data = await response.json();
-  return data?.response?.[0]?.player?.photo || '';
+    return directUrl;
+  }
+
+  if (!meta.team && !meta.league) return '';
+
+  const tryFetch = async (season) => {
+    const params = new URLSearchParams({ search: meta.search, season: String(season) });
+    if (meta.team) params.set('team', String(meta.team));
+    else params.set('league', String(meta.league));
+    const url = `https://${FOOTBALL_API_HOST}/players?${params.toString()}`;
+    if (!navigator.onLine) return '';
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-host': FOOTBALL_API_HOST,
+        'x-rapidapi-key': FOOTBALL_API_KEY
+      }
+    });
+    if (!response.ok) throw new Error(`photo-api-${response.status}`);
+    const data = await response.json();
+    return data?.response?.[0]?.player?.photo || '';
+  };
+
+  // Try configured season first
+  const photo = await tryFetch(meta.season || FOOTBALL_API_DEFAULT_SEASON);
+  if (photo) return photo;
+
+  // If no photo found and we used an old season, try FOOTBALL_API_DEFAULT_SEASON as fallback
+  if (meta.season && meta.season !== FOOTBALL_API_DEFAULT_SEASON) {
+    try {
+      const fallback = await tryFetch(FOOTBALL_API_DEFAULT_SEASON);
+      if (fallback) return fallback;
+    } catch (_) {}
+  }
+
+  return '';
 }
 
 function refreshPlayerPhotoMarks(cardId) {
@@ -338,7 +393,8 @@ function refreshPlayerPhotoMarks(cardId) {
     mark.classList.add('card-mark-player-photo');
     mark.classList.remove('card-mark-player-pending');
     mark.innerHTML = `
-      <img src="${escapeAttr(photo)}" alt="${escapeAttr(card.name)}" class="player-photo-img" loading="lazy" decoding="async">
+      <img src="${escapeAttr(photo)}" alt="${escapeAttr(card.name)}" class="player-photo-img" loading="lazy" decoding="async"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='grid'; this.parentElement.classList.remove('card-mark-player-photo');">
       <span class="player-photo-fallback">${getCardInitials(card)}</span>
     `;
   });
@@ -390,7 +446,8 @@ function cardMark(card, className = '') {
     if (!photo) queuePlayerPhoto(card);
     return `<span class="card-mark rarity-${card.rarity} ${className} card-mark-player ${photo ? 'card-mark-player-photo' : 'card-mark-player-pending'}" data-player-card-id="${escapeAttr(card.id)}" aria-hidden="true">
       ${photo
-        ? `<img src="${escapeAttr(photo)}" alt="${escapeAttr(card.name)}" class="player-photo-img" loading="lazy" decoding="async">`
+        ? `<img src="${escapeAttr(photo)}" alt="${escapeAttr(card.name)}" class="player-photo-img" loading="lazy" decoding="async"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='grid'; this.parentElement.classList.remove('card-mark-player-photo');">`
         : ''}
       <span class="player-photo-fallback">${getCardInitials(card)}</span>
     </span>`;
@@ -558,7 +615,7 @@ async function initApp() {
   if (userListenerUnsubscribe) { userListenerUnsubscribe(); userListenerUnsubscribe = null; }
   if (collectionListenerUnsubscribe) { collectionListenerUnsubscribe(); collectionListenerUnsubscribe = null; }
 
-  // Set up real-time listener for user profile (packs, streak, etc.)
+  // Set up real-time listener for user profile (packs, streak, friend requests, etc.)
   userListenerUnsubscribe = userRef.onSnapshot(doc => {
     if (doc.exists) {
       userData = doc.data();
@@ -567,6 +624,12 @@ async function initApp() {
       updatePackButtons();
       startTimerIfNeeded();
       renderChallenges();
+      // If profile panel is open, re-render requests so they appear in real time
+      const panel = $('profile-panel');
+      if (panel && panel.classList.contains('active')) {
+        renderFriendRequests();
+        renderFriendsList();
+      }
     }
   }, err => {
     console.warn('User profile listener error:', err);
@@ -2422,6 +2485,8 @@ async function renderFriendsList() {
 async function renderFriendRequests() {
   const section = $('requests-section');
   const list = $('requests-list');
+  if (!section || !list) return;
+
   const requests = userData?.friendRequests || [];
 
   if (requests.length === 0) {
@@ -2435,9 +2500,16 @@ async function renderFriendRequests() {
     return;
   }
 
-  list.innerHTML = '';
-  const profiles = await fetchUserProfiles(requests);
+  list.innerHTML = '<div class="empty-state"><p>Caricamento...</p></div>';
+  let profiles;
+  try {
+    profiles = await fetchUserProfiles(requests);
+  } catch (err) {
+    list.innerHTML = `<div class="empty-state"><p>Errore nel caricamento. Riprova.</p></div>`;
+    return;
+  }
 
+  list.innerHTML = '';
   requests.forEach(fromUid => {
     const fData = profiles.get(fromUid);
     if (!fData) return;
@@ -2464,7 +2536,16 @@ async function renderFriendRequests() {
 
   list.querySelectorAll('.btn-accept').forEach(btn => {
     btn.addEventListener('click', async () => {
-      await acceptFriendRequest(btn.dataset.uid);
+      btn.disabled = true;
+      btn.textContent = '...';
+      try {
+        await acceptFriendRequest(btn.dataset.uid);
+      } catch (err) {
+        showToast('Errore. Riprova.');
+        btn.disabled = false;
+        btn.textContent = 'Accetta';
+        return;
+      }
       renderFriendRequests();
       renderFriendsList();
       updateRequestBadge();
@@ -2473,7 +2554,16 @@ async function renderFriendRequests() {
 
   list.querySelectorAll('.btn-reject').forEach(btn => {
     btn.addEventListener('click', async () => {
-      await rejectFriendRequest(btn.dataset.uid);
+      btn.disabled = true;
+      btn.textContent = '...';
+      try {
+        await rejectFriendRequest(btn.dataset.uid);
+      } catch (err) {
+        showToast('Errore. Riprova.');
+        btn.disabled = false;
+        btn.textContent = 'Rifiuta';
+        return;
+      }
       renderFriendRequests();
       updateRequestBadge();
     });
@@ -2582,8 +2672,10 @@ async function sendFriendRequest(targetUid) {
   const requestRef = db.collection('pd_friend_requests').doc(getFriendshipId(currentUser.uid, targetUid));
 
   const result = await db.runTransaction(async transaction => {
-    const [mySnap, requestSnap] = await Promise.all([
+    // IMPORTANT: ALL reads must happen before any writes in a Firestore transaction
+    const [mySnap, theirSnap, requestSnap] = await Promise.all([
       transaction.get(myRef),
+      transaction.get(theirRef),
       transaction.get(requestRef)
     ]);
     const myData = mySnap.exists ? mySnap.data() : {};
@@ -2594,6 +2686,7 @@ async function sendFriendRequest(targetUid) {
       if (request.status === 'accepted') return { status: 'accepted' };
       if (request.status === 'pending') {
         if (request.to === currentUser.uid && request.from === targetUid) {
+          // They sent us a request first — auto-accept
           transaction.update(requestRef, {
             status: 'accepted',
             acceptedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -2617,7 +2710,7 @@ async function sendFriendRequest(targetUid) {
       from: currentUser.uid,
       fromUsername: userData?.username || '',
       to: targetUid,
-      toUsername: '',
+      toUsername: theirSnap.exists ? (theirSnap.data().username || '') : '',
       status: 'pending',
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -2653,7 +2746,12 @@ async function acceptFriendRequest(fromUid) {
   const requestRef = db.collection('pd_friend_requests').doc(getFriendshipId(currentUser.uid, fromUid));
 
   await db.runTransaction(async transaction => {
-    const requestSnap = await transaction.get(requestRef);
+    // Read ALL documents first before any writes
+    const [requestSnap, theirSnap] = await Promise.all([
+      transaction.get(requestRef),
+      transaction.get(theirRef)
+    ]);
+
     if (requestSnap.exists) {
       const request = requestSnap.data();
       if (request.status === 'pending' && request.to !== currentUser.uid) {
