@@ -19,6 +19,10 @@ try {
     auth = firebase.auth();
     db = firebase.firestore();
     googleProvider = new firebase.auth.GoogleAuthProvider();
+    // Always show the account picker. This makes the first-login flow
+    // predictable: tap → pick account → in. Avoids silent single-account
+    // sign-in that can surprise the user.
+    googleProvider.setCustomParameters({ prompt: 'select_account' });
     db.enablePersistence({ synchronizeTabs: true }).catch(err => {
       console.warn('Firestore persistence unavailable:', err.code);
     });
@@ -44,6 +48,12 @@ let collectionSearchReady = false;
 let userListenerUnsubscribe = null;
 let collectionListenerUnsubscribe = null;
 let pendingPackSyncInProgress = false;
+// Connectivity probes: a cached session is only used as a TRUE fallback
+// (genuine offline / unreachable backend), never as a "Firebase is a bit
+// slow" shortcut. These flags drive that behaviour.
+let authRestoreInFlight = false;
+let onlineHeartbeatOk = true; // optimistic until a probe fails
+let cachedFallbackActive = false;
 
 const LOCAL_SESSION_KEY = 'packdrop:last-session:v2';
 const LAST_SECTION_KEY = 'packdrop:last-section';
@@ -52,7 +62,11 @@ const PLAYER_PHOTO_CACHE_KEY = 'packdrop:player-photo-cache:v1';
 const UPDATE_CURRENT_SHA_KEY = 'packdrop:update-current-sha';
 const UPDATE_PENDING_SHA_KEY = 'packdrop:update-pending-sha';
 const UPDATE_IGNORED_UNTIL_KEY = 'packdrop:update-ignored-until';
-const AUTH_CACHE_DELAY = 250;
+// How long we wait for Firebase Auth to restore a session before falling
+// back to the cached copy. Firebase normally restores in 1–3s; 7s gives
+// plenty of headroom even on slow first hops, while still being short
+// enough that a genuinely offline user gets the cached UI quickly.
+const AUTH_RESTORE_TIMEOUT = 7000;
 const GITHUB_LATEST_COMMIT_URL = 'https://api.github.com/repos/lollo21x/packdrop/commits/main';
 const FOOTBALL_API_HOST = 'v3.football.api-sports.io';
 const FOOTBALL_API_KEY = '048d7f300beea42f42d12638b7a942ea';
@@ -678,41 +692,49 @@ function lockedCardMark(className = '') {
 $('btn-google-login').addEventListener('click', async () => {
   const btn = $('btn-google-login');
   if (!firebaseReady || !auth || !googleProvider) {
-    showToast('Connessione ancora in avvio. Puoi usare la copia salvata se disponibile.');
-    showCachedApp('Copia salvata attiva mentre Firebase si collega.');
+    showToast('Connessione ancora in avvio. Riprova tra un istante.');
     return;
   }
   if (!navigator.onLine) { showToast('Sei offline. Connettiti per accedere.'); return; }
+  if (btn.classList.contains('loading')) return;
   btn.classList.add('loading');
+
   try {
-    // Popup first, redirect fallback
-    try {
-      const result = await Promise.race([
-        auth.signInWithPopup(googleProvider),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('__popup_timeout__')), 8000))
-      ]);
-      if (result?.user) return;
-    } catch (popupErr) {
-      const code = popupErr?.code || '';
-      const msg = popupErr?.message || '';
-      const shouldRedirect = code === 'auth/popup-blocked' ||
-        code === 'auth/popup-closed-by-user' ||
-        code === 'auth/cancelled-popup-request' ||
-        msg === '__popup_timeout__';
-      if (!shouldRedirect) throw popupErr;
-    }
-    btn._redirecting = true;
-    await auth.signInWithRedirect(googleProvider);
+    // Single popup flow. The user picks the account once and is in.
+    // No artificial timeout, no eager redirect — those were causing the
+    // app to bounce the user back to Google while they were still
+    // choosing an account in the popup.
+    await auth.signInWithPopup(googleProvider);
+    // onAuthStateChanged takes over from here.
   } catch (err) {
+    const code = err?.code || '';
+    // The ONLY case where a redirect fallback makes sense: the browser
+    // physically blocked the popup (common in WebView/standalone mode).
+    if (code === 'auth/popup-blocked') {
+      btn._redirecting = true;
+      try {
+        await auth.signInWithRedirect(googleProvider);
+      } catch (redirectErr) {
+        console.error('Redirect login error:', redirectErr);
+        showToast('Errore di accesso. Riprova.');
+      }
+      return;
+    }
+    // User-initiated cancellation is not an error — stay quiet.
+    if (code === 'auth/popup-closed-by-user' ||
+        code === 'auth/cancelled-popup-request') {
+      return;
+    }
     console.error('Login error:', err);
-    showToast('Errore di accesso. Riprova.');
+    const msg = err?.message || 'Errore di accesso. Riprova.';
+    showToast(msg);
   } finally {
     if (!btn._redirecting) btn.classList.remove('loading');
   }
 });
 
 if (firebaseReady && auth) {
-  // Handle redirect result
+  // Handle redirect result (only used if popup was actually blocked)
   auth.getRedirectResult().then(result => {
     if (result?.user) {
       const btn = $('btn-google-login');
@@ -724,16 +746,29 @@ if (firebaseReady && auth) {
     }
   });
 
-  setTimeout(() => {
-    if (!currentUser && appEl.classList.contains('hidden') && hasCachedSession()) {
-      showCachedApp('Connessione lenta: sto usando la copia salvata.');
+  // Deferred cached-fallback. We do NOT eagerly enter cached mode on a
+  // short timer the way the old code did — that produced a spurious
+  // "Connessione lenta" toast on every perfectly-good WiFi login. We only
+  // fall back if, after a generous window, Auth has genuinely not restored
+  // AND Firestore is confirmed unreachable.
+  authRestoreInFlight = true;
+  setTimeout(async () => {
+    authRestoreInFlight = false;
+    if (currentUser || !appEl.classList.contains('hidden')) return; // already online
+    if (!hasCachedSession()) return; // nothing to fall back to
+    const offline = await isGenuinelyOffline();
+    if (offline) {
+      showCachedApp('Sei offline: copia salvata attiva.');
     }
-  }, AUTH_CACHE_DELAY);
+    // If we are reachable, leave the login screen up — Auth is simply
+    // taking its time and will fire onAuthStateChanged momentarily.
+  }, AUTH_RESTORE_TIMEOUT);
 
   // Auth state observer
   auth.onAuthStateChanged(async user => {
     if (user) {
       currentUser = user;
+      cachedFallbackActive = false;
       appMode = 'online';
       loginScreen.classList.add('hidden');
       await initApp();
@@ -743,7 +778,8 @@ if (firebaseReady && auth) {
       currentUser = null;
       userData = null;
       userCollection = {};
-      if (!navigator.onLine && hasCachedSession()) {
+      // Signed out (or never signed in). Only use cached copy if truly offline.
+      if (hasCachedSession() && navigator.onLine === false) {
         showCachedApp('Sei offline: copia salvata attiva.');
         return;
       }
@@ -752,6 +788,19 @@ if (firebaseReady && auth) {
       bottomNav.classList.add('hidden');
       closeProfilePanel();
     }
+  });
+
+  // React to connectivity changes while the app is running. If the user
+  // dropped to cached mode (e.g. on a train) and connectivity returns,
+  // transparently promote back to online.
+  window.addEventListener('online', () => {
+    onlineHeartbeatOk = true;
+    if (cachedFallbackActive) {
+      recoverFromCachedFallback().catch(() => {});
+    }
+  });
+  window.addEventListener('offline', () => {
+    onlineHeartbeatOk = false;
   });
 } else {
   setTimeout(() => showCachedApp('Firebase non è ancora disponibile: copia salvata attiva.'), 0);
@@ -783,10 +832,17 @@ async function initApp() {
 
   let userDoc;
   try {
-    userDoc = await withTimeout(userRef.get(), hasMatchingCache ? 4500 : 7000);
+    // Generous window: we already optimistically rendered from cache, so
+    // there is no UX cost in waiting for the real doc. Only fall back to
+    // cached if the network genuinely can't reach Firestore.
+    userDoc = await withTimeout(userRef.get(), hasMatchingCache ? 12000 : 10000);
   } catch (err) {
     console.warn('User load slow/unavailable:', err);
-    if (hasMatchingCache || showCachedApp('Connessione lenta: copia salvata attiva.')) return;
+    // Distinguish "genuinely offline" from "just slow". Only the former
+    // justifies the cached copy; the latter should keep the login screen.
+    const offline = await isGenuinelyOffline();
+    if (offline && (hasMatchingCache || showCachedApp('Sei offline: copia salvata attiva.'))) return;
+    if (hasMatchingCache) return; // optimistic UI already shown, keep it
     showToast('Connessione lenta. Riprova tra qualche secondo.');
     loginScreen.classList.remove('hidden');
     return;
@@ -883,6 +939,52 @@ function hasCachedSession() {
   } catch (err) {
     return false;
   }
+}
+
+// ── Connectivity probing ──
+// `navigator.onLine` is unreliable (it only flips on link-down events), so
+// we additionally probe Firestore itself. This is what tells us whether
+// writes (predictions, friend requests, match results) can actually land.
+async function probeFirestoreConnection(timeoutMs = 4500) {
+  if (!firebaseReady || !db) return false;
+  if (!navigator.onLine) return false;
+  try {
+    // pd_cards is readable by any authed user and always exists. A tiny
+    // .get() round-trip is the cheapest real reachability check.
+    await withTimeout(
+      db.collection('pd_cards').limit(1).get(),
+      timeoutMs
+    );
+    onlineHeartbeatOk = true;
+    return true;
+  } catch (err) {
+    onlineHeartbeatOk = false;
+    return false;
+  }
+}
+
+// Promote the app from cached-fallback back to online once connectivity
+// returns (called from the window 'online' event and after Auth restores).
+async function recoverFromCachedFallback() {
+  if (!cachedFallbackActive) return;
+  if (!firebaseReady || !auth) return;
+  const online = await probeFirestoreConnection();
+  if (!online) return;
+  const user = auth.currentUser;
+  if (!user) return;
+  // Re-run the normal online init; it will flip appMode to 'online'.
+  currentUser = user;
+  cachedFallbackActive = false;
+  await initApp();
+}
+
+// Returns true ONLY when there is a genuine reason to use the cached copy
+// (browser offline OR Firestore confirmed unreachable). Replaces the old
+// "anything slower than 250ms → cached" shortcut.
+async function isGenuinelyOffline() {
+  if (navigator.onLine === false) return true;
+  const reachable = await probeFirestoreConnection();
+  return !reachable;
 }
 
 function serializeTimestamp(value) {
@@ -1044,6 +1146,7 @@ function showCachedApp(message) {
   const session = loadLocalSession();
   if (!session) return false;
   appMode = 'cached';
+  cachedFallbackActive = true;
   currentUser = session.currentUser || null;
   userData = session.userData || {};
   userCollection = session.userCollection || {};
@@ -3051,18 +3154,29 @@ async function searchUser() {
     const addBtn = $('btn-add-found');
     if (!btnDisabled) {
       addBtn.addEventListener('click', async () => {
-        let result = null;
-        if (isReceived) {
-          await acceptFriendRequest(targetUid);
-          result = { status: 'accepted' };
-        } else {
-          result = await sendFriendRequest(targetUid);
-        }
+        if (addBtn.disabled) return;
         addBtn.disabled = true;
-        addBtn.textContent = result?.status === 'accepted' ? 'Amico aggiunto' : 'Richiesta inviata';
-        renderFriendRequests();
-        renderFriendsList();
-        updateRequestBadge();
+        const originalText = addBtn.textContent;
+        addBtn.textContent = 'Invio…';
+        try {
+          let result = null;
+          if (isReceived) {
+            await acceptFriendRequest(targetUid);
+            result = { status: 'accepted' };
+          } else {
+            result = await sendFriendRequest(targetUid);
+          }
+          addBtn.textContent = result?.status === 'accepted' ? 'Amico aggiunto' : 'Richiesta inviata';
+          // Refresh the received-requests list too, in case we just accepted
+          renderFriendRequests();
+          renderFriendsList();
+          updateRequestBadge();
+        } catch (err) {
+          console.error('Friend action error:', err);
+          addBtn.disabled = false;
+          addBtn.textContent = originalText;
+          // Toast already shown by sendFriendRequest/acceptFriendRequest
+        }
       });
     }
   } catch (err) {
@@ -3854,8 +3968,32 @@ function buildMatchCard(m, isFinished) {
   return card;
 }
 
+// Run a Firestore write with up to 2 automatic retries on transient
+// failures (unavailable/network). Permission errors are surfaced as-is.
+async function runFirestoreWrite(writeFn, { retries = 2, baseDelay = 700 } = {}) {
+  let lastErr = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await writeFn();
+    } catch (err) {
+      lastErr = err;
+      const code = err?.code || '';
+      const transient = code === 'unavailable' ||
+        code === 'deadline-exceeded' ||
+        code === 'internal' ||
+        err?.message?.includes('__timeout__');
+      if (!transient || attempt === retries) throw err;
+      await new Promise(r => setTimeout(r, baseDelay * (attempt + 1)));
+    }
+  }
+  throw lastErr;
+}
+
 async function savePredictionFromInputs(card, matchId) {
-  if (!isOnlineApp() || !currentUser) { showToast('Accedi per salvare.'); return; }
+  if (!isOnlineApp() || !currentUser) {
+    showToast('Attendi la connessione per salvare.');
+    return;
+  }
   const hInp = card.querySelector('.score-input[data-side="home"]');
   const aInp = card.querySelector('.score-input[data-side="away"]');
   const m = predictionsState.matches[matchId];
@@ -3873,25 +4011,37 @@ async function savePredictionFromInputs(card, matchId) {
   }
   const predId = `${matchId}_${currentUser.uid}`;
   try {
-    await db.collection('pd_predictions').doc(predId).set({
+    await runFirestoreWrite(() => db.collection('pd_predictions').doc(predId).set({
       matchId,
       uid: currentUser.uid,
       homeScore,
       awayScore,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+    }, { merge: true }));
     predictionsState.myPredictions[matchId] = { matchId, uid: currentUser.uid, homeScore, awayScore };
     showToast('Pronostico salvato.');
     refreshPredictionsView();
   } catch (err) {
     console.error('Save prediction error:', err);
-    showToast('Impossibile salvare. La partita potrebbe essere già iniziata.');
+    const code = err?.code || '';
+    if (code === 'permission-denied') {
+      showToast('Partita già iniziata: pronostici chiusi.');
+    } else {
+      showToast('Salvataggio non riuscito. Riprova tra un attimo.');
+    }
   }
 }
 
 async function saveMatchResultFromCard(card, matchId) {
-  if (!predictionsState.isAdmin || !isOnlineApp()) return;
+  if (!isOnlineApp()) {
+    showToast('Senza connessione non puoi pubblicare il risultato.');
+    return;
+  }
+  if (!predictionsState.isAdmin) {
+    showToast('Solo gli amministratori possono pubblicare i risultati.');
+    return;
+  }
   const hInp = card.querySelector('.admin-score[data-side="home"]');
   const aInp = card.querySelector('.admin-score[data-side="away"]');
   const homeScore = clampScore(hInp.value);
@@ -3900,13 +4050,15 @@ async function saveMatchResultFromCard(card, matchId) {
     showToast('Inserisci un risultato valido (0–99).');
     return;
   }
+  const saveBtn = card.querySelector('.btn-admin-save');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Salvo…'; }
   try {
-    await db.collection('pd_matches').doc(matchId).set({
+    await runFirestoreWrite(() => db.collection('pd_matches').doc(matchId).set({
       homeScore,
       awayScore,
       status: 'finished',
       finishedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+    }, { merge: true }));
     predictionsState.matches[matchId] = {
       ...predictionsState.matches[matchId],
       homeScore, awayScore, status: 'finished'
@@ -3915,7 +4067,13 @@ async function saveMatchResultFromCard(card, matchId) {
     refreshPredictionsView();
   } catch (err) {
     console.error('Save match result error:', err);
-    showToast('Errore nel salvataggio del risultato.');
+    const code = err?.code || '';
+    if (code === 'permission-denied') {
+      showToast('Il tuo account non è abilitato come admin (controlla PD_ADMIN_UIDS e le regole Firestore).');
+    } else {
+      showToast('Salvataggio non riuscito. Riprova tra un attimo.');
+    }
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salva risultato'; }
   }
 }
 
