@@ -142,6 +142,16 @@
       <path d="M6 10h12v10H6V10Z"></path>
       <path d="M12 14v2"></path>
     </symbol>
+    <symbol id="icon-target" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"></circle>
+      <circle cx="12" cy="12" r="5"></circle>
+      <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"></circle>
+    </symbol>
+    <symbol id="icon-whistle" viewBox="0 0 24 24">
+      <path d="M3 12a6 6 0 1 1 6 6H3v-4"></path>
+      <path d="M9 12h12"></path>
+      <path d="M18 9h3v6h-3a3 3 0 0 1 0-6Z"></path>
+    </symbol>
   </svg>
 
   <!-- ═══════════════════════════════════════════════════════ -->
@@ -312,6 +322,22 @@
         <div id="collection-grid" class="card-grid"></div>
       </div>
 
+      <!-- ── SECTION 3: PRONOSTICI ── -->
+      <div id="section-predictions" class="section" data-loaded="false">
+        <div class="predictions-header">
+          <div class="predictions-intro">
+            <h2 class="section-title">Pronostici</h2>
+            <p class="predictions-sub">Indovina il risultato esatto: vinci 10 pacchetti.</p>
+          </div>
+          <div class="predictions-stats" id="predictions-stats">
+            <span class="pred-stat"><strong id="pred-played">0</strong> giocate</span>
+            <span class="pred-stat"><strong id="pred-won">0</strong> vinte</span>
+          </div>
+        </div>
+        <div id="predictions-list" class="predictions-list"></div>
+      </div>
+
+
       <!-- ── PROFILE PANEL (Standalone Screen) ── -->
       <div id="profile-panel" class="profile-panel" aria-hidden="true">
         
@@ -426,6 +452,18 @@
         </button>
       </header>
       <div class="friend-collection-scroll">
+        <div class="friend-collection-progress" id="friend-collection-progress"></div>
+        <div class="friend-collection-tabs" id="friend-collection-tabs">
+          <button class="friend-tab-pill active" data-pack="nations" style="--tab-accent:#2dd4bf">
+            <span class="tab-label"><svg class="icon"><use href="#icon-globe"></use></svg>Nazioni</span>
+          </button>
+          <button class="friend-tab-pill" data-pack="stars" style="--tab-accent:#38bdf8">
+            <span class="tab-label"><svg class="icon"><use href="#icon-star"></use></svg>Giocatori</span>
+          </button>
+          <button class="friend-tab-pill" data-pack="legends" style="--tab-accent:#f8c35a">
+            <span class="tab-label"><svg class="icon"><use href="#icon-trophy"></use></svg>Leggende</span>
+          </button>
+        </div>
         <div id="friend-collection-grid" class="card-grid"></div>
       </div>
     </div>
@@ -442,6 +480,10 @@
     <button class="nav-tab" data-section="collection">
       <span class="nav-icon"><svg class="icon"><use href="#icon-collection"></use></svg></span>
       <span class="nav-label">Collezione</span>
+    </button>
+    <button class="nav-tab" data-section="predictions">
+      <span class="nav-icon"><svg class="icon"><use href="#icon-target"></use></svg></span>
+      <span class="nav-label">Pronostici</span>
     </button>
   </nav>
 
@@ -526,6 +568,7 @@
   <!-- App Scripts -->
   <script defer src="firebase-config.js"></script>
   <script defer src="cards-data.js"></script>
+  <script defer src="matches-data.js"></script>
   <script defer src="app.js"></script>
 
   <script>
