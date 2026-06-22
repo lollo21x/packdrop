@@ -60,7 +60,7 @@ const FOOTBALL_API_DEFAULT_SEASON = 2025;
 // Admin console for Pronostici: list of Firebase Auth UIDs that can set
 // match results. Replace/add your own uid(s) here.
 const PD_ADMIN_UIDS = [
-  'ZTCTToeJKUSo7AAtARvMRi2TLQ83'
+  'REPLACE_WITH_YOUR_AUTH_UID'
 ];
 const PREDICTION_REWARD = 10;        // bonus packs for a correct score
 const PREDICTION_LOCK_SECONDS = 60;  // lock predictions this many seconds before kickoff
@@ -2106,15 +2106,34 @@ function showCardDetail(card, owned) {
   const preview = $('modal-card-preview');
   const info = $('modal-info');
   const meta = RARITY_META[card.rarity];
+  const isLegendary = card.rarity === 'legendary';
+  const isEpic = card.rarity === 'epic';
 
-  preview.className = `modal-card-preview rarity-${card.rarity}`;
-  preview.style.background = `linear-gradient(135deg, ${meta.gradient[0]}, ${meta.gradient[1]})`;
-  preview.style.border = `${card.rarity === 'legendary' ? 4 : card.rarity === 'epic' ? 3 : 2}px solid ${meta.color}`;
-  if (meta.glow) preview.style.boxShadow = `0 0 20px ${meta.glow}`;
+  preview.className = `modal-card-preview rarity-${card.rarity}` + (isLegendary ? ' legendary-hero' : '');
+  preview.style.cssText = '';
+
+  const typeLabel = card.type === 'team' ? 'Stemma Nazione'
+    : card.type === 'player' ? 'Star Player' : 'Icona Storica';
+
+  // Hero preview: distinct look per rarity
+  if (isLegendary) {
+    preview.style.background = `
+      radial-gradient(circle at 50% 28%, ${meta.color} 0%, rgba(248,195,90,0.0) 60%),
+      conic-gradient(from 210deg at 50% 50%, ${meta.gradient[0]}, ${meta.gradient[1]}, ${meta.gradient[0]})
+    `;
+  } else {
+    preview.style.background = `linear-gradient(135deg, ${meta.gradient[0]}, ${meta.gradient[1]})`;
+  }
+  preview.style.border = `${isLegendary ? 4 : isEpic ? 3 : 2}px solid ${meta.color}`;
+  preview.style.boxShadow = isLegendary
+    ? `0 0 28px ${meta.glow || meta.color}, inset 0 0 40px rgba(255,255,255,0.12)`
+    : (meta.glow ? `0 0 18px ${meta.glow}` : 'none');
 
   preview.innerHTML = `
+    ${isLegendary ? '<span class="legendary-rays" aria-hidden="true"></span>' : ''}
     ${cardMark(card, 'card-mark-large')}
-    <span style="font-size:15px;font-weight:700">${card.name}</span>
+    <span class="modal-card-name">${escapeHtml(card.name)}</span>
+    <span class="modal-card-type">${escapeHtml(typeLabel)}</span>
   `;
 
   const unlockedDate = owned.unlockedAt?.toDate ? owned.unlockedAt.toDate() : new Date(owned.unlockedAt);
@@ -2122,31 +2141,36 @@ function showCardDetail(card, owned) {
   const code = getPrimaryCode(owned);
 
   info.innerHTML = `
-    <h3>${card.name}</h3>
-    ${code ? `<div class="card-unique-code">${code}</div>` : ''}
-    <div class="modal-info-row">
-      <span class="modal-info-label">Nazione</span>
-      <span class="modal-info-value">${card.nation}</span>
+    <div class="modal-head">
+      <h3>${escapeHtml(card.name)}</h3>
+      <span class="modal-rarity-pill" style="--rarity-color:${meta.color}">${meta.label}</span>
     </div>
-    <div class="modal-info-row">
-      <span class="modal-info-label">Tipo</span>
-      <span class="modal-info-value">${card.type === 'team' ? 'Stemma Nazione' : card.type === 'player' ? 'Star Player' : 'Icona Storica'}</span>
-    </div>
-    <div class="modal-info-row">
-      <span class="modal-info-label">Rarità</span>
-      <span class="modal-info-value" style="color:${meta.color}">${meta.label}</span>
-    </div>
-    <div class="modal-info-row">
-      <span class="modal-info-label">Copie</span>
-      <span class="modal-info-value">${owned.count || 1}</span>
-    </div>
-    <div class="modal-info-row" style="border:none">
-      <span class="modal-info-label">Sbloccata il</span>
-      <span class="modal-info-value">${dateStr}</span>
+    ${code ? `<div class="card-unique-code">${escapeHtml(code)}</div>` : ''}
+    <div class="modal-info-grid">
+      <div class="modal-info-cell">
+        <span class="modal-info-label">Nazione</span>
+        <span class="modal-info-value">${escapeHtml(card.nation)}</span>
+      </div>
+      <div class="modal-info-cell">
+        <span class="modal-info-label">Tipo</span>
+        <span class="modal-info-value">${escapeHtml(typeLabel)}</span>
+      </div>
+      <div class="modal-info-cell">
+        <span class="modal-info-label">Rarità</span>
+        <span class="modal-info-value" style="color:${meta.color}">${meta.label}</span>
+      </div>
+      <div class="modal-info-cell">
+        <span class="modal-info-label">Copie</span>
+        <span class="modal-info-value">${owned.count || 1}</span>
+      </div>
+      <div class="modal-info-cell modal-info-cell--wide">
+        <span class="modal-info-label">Sbloccata il</span>
+        <span class="modal-info-value">${dateStr}</span>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary modal-action" id="btn-copy-card-code" ${code ? '' : 'disabled'}>${svgIcon('cards')} Copia codice</button>
-      <button class="btn-primary modal-action" id="btn-share-card-image" ${code ? '' : 'disabled'}>${svgIcon('share')} Condividi immagine</button>
+      <button class="btn-primary modal-action" id="btn-share-card-image" ${code ? '' : 'disabled'}>${svgIcon('share')} Condividi</button>
     </div>
   `;
 
@@ -2676,6 +2700,16 @@ function renderProfile() {
   renderFriendsList();
   renderFriendRequests();
   setupProfileHandlers();
+  syncUpdateNowButton();
+}
+
+// Show the "Aggiorna ora" button only when an update has been postponed
+// (i.e. the pending SHA is set, typically after clicking "Più tardi").
+function syncUpdateNowButton() {
+  const btn = $('btn-update-now');
+  if (!btn) return;
+  const pendingSha = localStorage.getItem(UPDATE_PENDING_SHA_KEY);
+  btn.classList.toggle('hidden', !pendingSha);
 }
 
 async function renderFriendsList() {
@@ -2951,6 +2985,19 @@ function setupProfileHandlers() {
   // Invite
   const btnInvite = $('btn-invite');
   if (btnInvite) btnInvite.addEventListener('click', shareInvite);
+
+  // Manual app update (visible only when an update was postponed)
+  const btnUpdateNow = $('btn-update-now');
+  if (btnUpdateNow) {
+    btnUpdateNow.addEventListener('click', async () => {
+      if (btnUpdateNow.dataset.loading === 'true') return;
+      btnUpdateNow.dataset.loading = 'true';
+      btnUpdateNow.classList.add('loading');
+      btnUpdateNow.disabled = true;
+      const pendingSha = localStorage.getItem(UPDATE_PENDING_SHA_KEY);
+      await applyAppUpdate(pendingSha || undefined);
+    });
+  }
 }
 
 async function searchUser() {
@@ -3610,21 +3657,14 @@ async function loadMyPredictions() {
   predictionsState.myPredictions = {};
   predictionsState.claimed = loadClaimedSet();
   if (!isOnlineApp() || !currentUser) return;
-  // Doc ids are `${matchId}_${uid}` — fetch each directly (rules allow reading
-  // only documents ending with the caller's own uid).
-  const ids = (typeof WC26_MATCHES_FULL !== 'undefined' ? WC26_MATCHES_FULL : [])
-    .map(m => `${m.id}_${currentUser.uid}`);
+  // Query by the `uid` field — the rule allows reading docs where
+  // resource.data.uid == request.auth.uid. Robust to any uid shape.
   try {
-    const snaps = await Promise.all(
-      ids.map(id =>
-        db.collection('pd_predictions').doc(id).get()
-          .then(s => s.exists ? s : null)
-          .catch(() => null)
-      )
-    );
-    snaps.forEach(s => {
-      if (!s || !s.exists) return;
-      const d = s.data();
+    const snap = await db.collection('pd_predictions')
+      .where('uid', '==', currentUser.uid)
+      .get();
+    snap.forEach(doc => {
+      const d = doc.data();
       predictionsState.myPredictions[d.matchId] = {
         matchId: d.matchId,
         homeScore: d.homeScore,
