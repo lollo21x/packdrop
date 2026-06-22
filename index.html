@@ -232,26 +232,35 @@
         <!-- Pack Carousel -->
         <div class="pack-carousel-wrapper">
           <div class="pack-carousel" id="pack-carousel">
-            <div class="pack-card selected" data-pack="nations" style="--pack-accent:#2dd4bf">
+            <div class="pack-card selected" data-pack="nations" data-tier="common" style="--pack-accent:#2dd4bf">
+              <span class="pack-shine" aria-hidden="true"></span>
               <span class="pack-art"><svg class="icon"><use href="#icon-globe"></use></svg></span>
-              <span class="pack-name">Nations Pack</span>
-              <span class="pack-subtitle">Team Shield</span>
-              <span class="pack-desc">Carte stemma delle 48 nazioni qualificate.</span>
-              <span class="pack-rarity-tag" style="color:#6b7280">60% Comuni</span>
+              <span class="pack-info">
+                <span class="pack-name">Nations Pack</span>
+                <span class="pack-subtitle">Team Shield</span>
+                <span class="pack-desc">Carte stemma delle 48 nazioni qualificate.</span>
+              </span>
+              <span class="pack-rarity-tag" style="color:#9ca3af">60% Comuni</span>
             </div>
-            <div class="pack-card" data-pack="stars" style="--pack-accent:#38bdf8">
+            <div class="pack-card" data-pack="stars" data-tier="rare" style="--pack-accent:#38bdf8">
+              <span class="pack-shine" aria-hidden="true"></span>
               <span class="pack-art"><svg class="icon"><use href="#icon-star"></use></svg></span>
-              <span class="pack-name">Stars Pack</span>
-              <span class="pack-subtitle">Star Player</span>
-              <span class="pack-desc">Il giocatore di punta di ogni nazione.</span>
-              <span class="pack-rarity-tag" style="color:#3b82f6">30% Rare</span>
+              <span class="pack-info">
+                <span class="pack-name">Stars Pack</span>
+                <span class="pack-subtitle">Star Player</span>
+                <span class="pack-desc">Il giocatore di punta di ogni nazione.</span>
+              </span>
+              <span class="pack-rarity-tag" style="color:#60a5fa">30% Rare</span>
             </div>
-            <div class="pack-card" data-pack="legends" style="--pack-accent:#f8c35a">
+            <div class="pack-card" data-pack="legends" data-tier="legendary" style="--pack-accent:#f8c35a">
+              <span class="pack-shine" aria-hidden="true"></span>
               <span class="pack-art"><svg class="icon"><use href="#icon-trophy"></use></svg></span>
-              <span class="pack-name">Legends Pack</span>
-              <span class="pack-subtitle">Football Icon</span>
-              <span class="pack-desc">Leggende storiche. Nessuna carta comune!</span>
-              <span class="pack-rarity-tag" style="color:#f59e0b">12% Leggendarie</span>
+              <span class="pack-info">
+                <span class="pack-name">Legends Pack</span>
+                <span class="pack-subtitle">Football Icon</span>
+                <span class="pack-desc">Leggende storiche. Nessuna carta comune!</span>
+              </span>
+              <span class="pack-rarity-tag" style="color:#fbbf24">12% Leggendarie</span>
             </div>
           </div>
           <div class="pack-dots" id="pack-dots">
@@ -422,6 +431,10 @@
             <button id="btn-invite" class="btn-invite">
               <svg class="icon" style="width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#icon-share"></use></svg>
               Invita un amico
+            </button>
+            <button id="btn-update-now" class="btn-update-now hidden">
+              <svg class="icon"><use href="#icon-zap"></use></svg>
+              Aggiorna ora l'app
             </button>
             <div class="profile-reset-wrap" style="padding:0 0 28px">
               <button id="btn-reset-progress" class="btn-reset-progress">
