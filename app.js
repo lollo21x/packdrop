@@ -3690,7 +3690,8 @@ let predictionsState = {
   matches: {},          // matchId -> { homeScore, awayScore, status, kickoffMs }
   myPredictions: {},    // matchId -> { homeScore, awayScore, claimed }
   isAdmin: false,
-  ready: false
+  ready: false,
+  filter: 'upcoming'    // 'upcoming' (in programma) | 'past' (passate)
 };
 let predictionsTick = null;
 
@@ -3710,11 +3711,26 @@ function isMatchStarted(match) {
 
 async function initPredictionsSection() {
   predictionsState.isAdmin = isPdAdminUser();
+  setupPredictionsFilterTabs();
   await loadAllMatches();
   await loadMyPredictions();
   predictionsState.ready = true;
   refreshPredictionsView();
   startPredictionsTicker();
+}
+
+function setupPredictionsFilterTabs() {
+  const wrap = $('predictions-tabs');
+  if (!wrap || wrap.dataset.bound === 'true') return;
+  wrap.dataset.bound = 'true';
+  wrap.querySelectorAll('.tab-pill').forEach(tab => {
+    tab.addEventListener('click', () => {
+      wrap.querySelectorAll('.tab-pill').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      predictionsState.filter = tab.dataset.predFilter;
+      refreshPredictionsView();
+    });
+  });
 }
 
 function startPredictionsTicker() {
@@ -3826,35 +3842,39 @@ function refreshPredictionsView() {
   // Process rewards first (silent claim on re-entry)
   processPendingRewards().catch(err => console.warn('Reward process skipped:', err));
 
-  // Sort: not-finished matches by kickoff asc (closest first),
-  // finished matches (with result) pushed below, also by kickoff asc.
+  // Split into upcoming (in programma) and past (concluse con risultato).
   const all = Object.values(predictionsState.matches);
   const upcoming = all.filter(m => m.status !== 'finished').sort((a, b) => a.kickoffMs - b.kickoffMs);
-  const finished = all.filter(m => m.status === 'finished').sort((a, b) => a.kickoffMs - b.kickoffMs);
+  const finished = all.filter(m => m.status === 'finished').sort((a, b) => b.kickoffMs - a.kickoffMs);
+
+  // Update the count badges on the filter tabs
+  const upCount = $('pred-tab-count-upcoming');
+  const pastCount = $('pred-tab-count-past');
+  if (upCount) upCount.textContent = upcoming.length;
+  if (pastCount) pastCount.textContent = finished.length;
 
   list.innerHTML = '';
-  if (!upcoming.length && !finished.length) {
-    list.innerHTML = '<div class="empty-state"><p>Nessuna partita disponibile.</p></div>';
+
+  const showPast = predictionsState.filter === 'past';
+  const shown = showPast ? finished : upcoming;
+
+  if (!shown.length) {
+    list.innerHTML = showPast
+      ? '<div class="empty-state"><p>Nessuna partita passata. Torna qui dopo che un admin ha pubblicato i risultati.</p></div>'
+      : '<div class="empty-state"><p>Nessuna partita in programma.</p></div>';
     renderPredictionsStats();
     return;
   }
 
-  // Optional admin badge at top
+  // Optional admin badge at top (shown in both views)
   if (predictionsState.isAdmin) {
     const banner = document.createElement('div');
     banner.className = 'pred-admin-banner';
-    banner.innerHTML = `<span class="pred-admin-dot"></span> Console admin attiva · puoi impostare i risultati`;
+    banner.innerHTML = `<span class="pred-admin-dot"></span> Console admin attiva · puoi impostare e correggere i risultati`;
     list.appendChild(banner);
   }
 
-  upcoming.forEach(m => list.appendChild(buildMatchCard(m, false)));
-  if (finished.length) {
-    const sep = document.createElement('div');
-    sep.className = 'pred-section-sep';
-    sep.textContent = 'Concluse';
-    list.appendChild(sep);
-    finished.forEach(m => list.appendChild(buildMatchCard(m, true)));
-  }
+  shown.forEach(m => list.appendChild(buildMatchCard(m, showPast)));
   renderPredictionsStats();
 }
 
@@ -3901,7 +3921,7 @@ function buildMatchCard(m, isFinished) {
   // Outcome line (for finished matches where user had a prediction)
   let outcome = '';
   if (isFinished && my) {
-    let correct = (m.homeScore === my.homeScore && m.awayScore === my.awayScore);
+    const correct = (m.homeScore === my.homeScore && m.awayScore === my.awayScore);
     const claimed = predictionsState.claimed && predictionsState.claimed.has(m.id);
     if (correct) {
       outcome = `<div class="match-outcome match-outcome--win">${claimed ? 'Vinto! +10 pacchetti' : 'Vinto! Ricompensa in arrivo…'}</div>`;
@@ -3917,6 +3937,9 @@ function buildMatchCard(m, isFinished) {
   if (predictionsState.isAdmin) {
     const hs = (m.homeScore !== null && m.homeScore !== undefined) ? m.homeScore : '';
     const as = (m.awayScore !== null && m.awayScore !== undefined) ? m.awayScore : '';
+    // When a result is already published we allow editing it ("Correggi")
+    // and clearing it ("Annulla", which sends the match back to "in programma").
+    const hasResult = isFinished && hs !== '' && as !== '';
     adminControls = `
       <div class="match-admin">
         <span class="match-admin-label">Admin:</span>
@@ -3925,7 +3948,8 @@ function buildMatchCard(m, isFinished) {
         <span class="match-score-sep">:</span>
         <input type="number" inputmode="numeric" min="0" max="99" class="score-input admin-score"
                data-side="away" data-match="${m.id}" value="${as}" placeholder="–">
-        <button class="btn-admin-save" data-match="${m.id}">Salva risultato</button>
+        <button class="btn-admin-save" data-match="${m.id}">${hasResult ? 'Correggi risultato' : 'Salva risultato'}</button>
+        ${hasResult ? `<button class="btn-admin-cancel" data-match="${m.id}">Annulla risultato</button>` : ''}
       </div>`;
   }
 
@@ -3959,10 +3983,12 @@ function buildMatchCard(m, isFinished) {
       inp.addEventListener('blur',   () => savePredictionFromInputs(card, m.id));
     });
   }
-  // Bind admin save
+  // Bind admin save (publish) / edit
   if (predictionsState.isAdmin) {
     const btnSave = card.querySelector('.btn-admin-save');
     if (btnSave) btnSave.addEventListener('click', () => saveMatchResultFromCard(card, m.id));
+    const btnCancel = card.querySelector('.btn-admin-cancel');
+    if (btnCancel) btnCancel.addEventListener('click', () => clearMatchResultFromCard(card, m.id));
   }
 
   return card;
@@ -4074,6 +4100,53 @@ async function saveMatchResultFromCard(card, matchId) {
       showToast('Salvataggio non riuscito. Riprova tra un attimo.');
     }
     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salva risultato'; }
+  }
+}
+
+// Admin: clear a published result. The match goes back to "scheduled"
+// (in programma) and predictions become editable again based on kickoff.
+async function clearMatchResultFromCard(card, matchId) {
+  if (!isOnlineApp()) {
+    showToast('Senza connessione non puoi modificare il risultato.');
+    return;
+  }
+  if (!predictionsState.isAdmin) {
+    showToast('Solo gli amministratori possono annullare i risultati.');
+    return;
+  }
+  const m = predictionsState.matches[matchId];
+  if (!m) return;
+  const ok = confirm(`Annullare il risultato di ${m.home} – ${m.away}?\nLa partita tornerà tra quelle in programma e i pronostici saranno riaperti in base all'orario di inizio.`);
+  if (!ok) return;
+
+  const cancelBtn = card.querySelector('.btn-admin-cancel');
+  if (cancelBtn) { cancelBtn.disabled = true; cancelBtn.textContent = 'Annullamento…'; }
+  try {
+    await runFirestoreWrite(() => db.collection('pd_matches').doc(matchId).set({
+      homeScore: firebase.firestore.FieldValue.delete(),
+      awayScore: firebase.firestore.FieldValue.delete(),
+      status: 'scheduled',
+      finishedAt: firebase.firestore.FieldValue.delete()
+    }, { merge: true }));
+    predictionsState.matches[matchId] = {
+      ...predictionsState.matches[matchId],
+      homeScore: null, awayScore: null, status: 'scheduled'
+    };
+    // Note: we intentionally do NOT reset the local "claimed" reward marker.
+    // If the admin republishes the same score, that prevents awarding the
+    // reward twice; if the score changes, new winners are credited naturally
+    // because their claim marker was never set.
+    showToast('Risultato annullato. La partita è di nuovo in programma.');
+    refreshPredictionsView();
+  } catch (err) {
+    console.error('Clear match result error:', err);
+    const code = err?.code || '';
+    if (code === 'permission-denied') {
+      showToast('Il tuo account non è abilitato come admin (controlla PD_ADMIN_UIDS e le regole Firestore).');
+    } else {
+      showToast('Annullamento non riuscito. Riprova tra un attimo.');
+    }
+    if (cancelBtn) { cancelBtn.disabled = false; cancelBtn.textContent = 'Annulla risultato'; }
   }
 }
 
