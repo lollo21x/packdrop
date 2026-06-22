@@ -392,7 +392,12 @@ a {
   border-radius: 50%;
   border: 2px solid rgba(66, 211, 146, 0.78);
   object-fit: cover;
-  cursor: pointer;
+  /* The avatar sits inside the header button. On iOS/Android standalone PWA the
+     <img> would otherwise be the topmost hit-test target and swallow the tap,
+     so the button's click never fires. Keep it purely visual. */
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
   box-shadow: 0 0 0 6px rgba(66, 211, 146, 0.08);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
@@ -1549,6 +1554,12 @@ a {
   transform: translateY(100%);
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   visibility: hidden;
+  /* Promote to its own compositing layer so the slide-in repaints reliably
+     inside iOS standalone WKWebView, where fixed elements can otherwise stay
+     invisible after a transform change. */
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .profile-panel.active {
@@ -2760,8 +2771,20 @@ body.modal-open {
   min-width: 48px;
   min-height: 48px;
   border-radius: 50%;
+  /* Explicit background + cursor guarantee the button is treated as a tap
+     target by iOS/Android standalone WKWebView/WebView, which are stricter
+     than desktop Safari/Chrome about click delivery on bare wrappers. */
+  background: transparent;
+  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   transition: transform 0.18s ease;
+}
+
+/* SVG icons inside profile buttons must not swallow taps either */
+.header-profile-btn > .icon,
+.header-profile-btn svg {
+  pointer-events: none;
 }
 
 .header-profile-btn:active {
