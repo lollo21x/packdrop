@@ -324,11 +324,112 @@
         </header>
 
         <div class="profile-panel-content" role="dialog" aria-modal="true" aria-label="Profilo">
+          <!-- Hero -->
+          <div class="profile-hero">
+            <img id="profile-avatar" class="profile-avatar" src="" alt="Avatar" loading="lazy">
+            <div id="profile-name" class="profile-name"></div>
+            <div id="profile-username" class="profile-username"></div>
+            <span id="profile-completion" class="profile-completion"></span>
+          </div>
+
+          <!-- Stats -->
+          <div class="stats-grid" style="padding:0 16px 16px">
+            <div class="stat-card">
+              <span class="stat-icon"><svg class="icon" style="width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><use href="#icon-package"></use></svg></span>
+              <span id="stat-packs" class="stat-value">0</span>
+              <span class="stat-label">Pacchetti aperti</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-icon"><svg class="icon" style="width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><use href="#icon-collection"></use></svg></span>
+              <span id="stat-cards" class="stat-value">0</span>
+              <span class="stat-label">Carte raccolte</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-icon"><svg class="icon" style="width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><use href="#icon-star"></use></svg></span>
+              <span id="stat-legendary" class="stat-value">0</span>
+              <span class="stat-label">Leggendarie</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-icon"><svg class="icon" style="width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round"><use href="#icon-check"></use></svg></span>
+              <span id="stat-challenges" class="stat-value">0</span>
+              <span class="stat-label">Sfide completate</span>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="profile-tabs" role="tablist">
+            <button class="profile-tab active" data-tab="friends" role="tab" aria-selected="true">
+              <svg class="icon" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#icon-users"></use></svg>
+              Amici
+            </button>
+            <button class="profile-tab" data-tab="search" role="tab" aria-selected="false">
+              <svg class="icon" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#icon-search"></use></svg>
+              Cerca
+            </button>
+            <button class="profile-tab" data-tab="account" role="tab" aria-selected="false">
+              <svg class="icon" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#icon-user"></use></svg>
+              Account
+            </button>
+          </div>
+
+          <!-- Tab: Friends -->
+          <div id="profile-tab-friends" class="profile-tab-content active" style="padding:0 16px">
+            <div id="requests-section" style="display:none;margin-bottom:20px">
+              <h2 class="section-title" style="font-size:17px;margin-bottom:10px">Richieste in arrivo</h2>
+              <div id="requests-list"></div>
+            </div>
+            <h2 class="section-title" style="font-size:17px;margin-bottom:10px">I tuoi amici</h2>
+            <div id="friends-list"></div>
+          </div>
+
+          <!-- Tab: Search -->
+          <div id="profile-tab-search" class="profile-tab-content" style="padding:0 16px">
+            <div class="search-input-wrap" style="margin-bottom:12px">
+              <input id="friend-search-input" class="search-input" type="text" placeholder="Cerca @username…" autocomplete="off" autocapitalize="off" spellcheck="false">
+              <button id="btn-search-user" class="btn-search">Cerca</button>
+            </div>
+            <div id="friend-search-result"></div>
+          </div>
+
+          <!-- Tab: Account -->
+          <div id="profile-tab-account" class="profile-tab-content" style="padding:0 16px">
+            <button id="btn-invite" class="btn-invite">
+              <svg class="icon" style="width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#icon-share"></use></svg>
+              Invita un amico
+            </button>
+            <div class="profile-reset-wrap" style="padding:0 0 28px">
+              <button id="btn-reset-progress" class="btn-reset-progress">
+                <svg class="icon"><use href="#icon-lock"></use></svg>
+                Reset completo
+              </button>
+              <p class="profile-reset-hint">Elimina tutti i dati, le carte e i progressi salvati su Firebase. Operazione irreversibile.</p>
+            </div>
+          </div>
         </div>
       </div>
 
     </div><!-- /app-container -->
   </div><!-- /app -->
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- FRIEND COLLECTION MODAL                                -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="friend-collection-modal" class="friend-collection-modal" aria-hidden="true">
+    <div class="friend-collection-content">
+      <header class="friend-collection-header">
+        <div class="friend-collection-title-row">
+          <img id="friend-modal-avatar" src="" alt="" class="friend-avatar" loading="lazy">
+          <h2 id="friend-modal-title">Collezione</h2>
+        </div>
+        <button id="friend-collection-close" class="header-profile-btn" aria-label="Chiudi">
+          <svg class="icon" style="width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><use href="#icon-x"></use></svg>
+        </button>
+      </header>
+      <div class="friend-collection-scroll">
+        <div id="friend-collection-grid" class="card-grid"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- ═══════════════════════════════════════════════════════ -->
   <!-- BOTTOM NAVIGATION                                      -->
