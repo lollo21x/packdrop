@@ -57,6 +57,14 @@ const GITHUB_LATEST_COMMIT_URL = 'https://api.github.com/repos/lollo21x/packdrop
 const FOOTBALL_API_HOST = 'v3.football.api-sports.io';
 const FOOTBALL_API_KEY = '048d7f300beea42f42d12638b7a942ea';
 const FOOTBALL_API_DEFAULT_SEASON = 2025;
+// Admin console for Pronostici: list of Firebase Auth UIDs that can set
+// match results. Replace/add your own uid(s) here.
+const PD_ADMIN_UIDS = [
+  'REPLACE_WITH_YOUR_AUTH_UID'
+];
+const PREDICTION_REWARD = 10;        // bonus packs for a correct score
+const PREDICTION_LOCK_SECONDS = 60;  // lock predictions this many seconds before kickoff
+const PD_PRED_CLAIMED_KEY = 'packdrop:pd-pred-claimed-v1';
 let pendingPackSync = loadPendingPackSync();
 let playerPhotoCache = loadPlayerPhotoCache();
 const playerPhotoInFlight = new Set();
@@ -1293,8 +1301,8 @@ function showMainApp() {
   setupCollectionSearch();
   setupInstallHandlers();
 
-  const savedSection = localStorage.getItem(LAST_SECTION_KEY) || 'play';
-  switchSection(savedSection === 'collection' ? 'collection' : 'play');
+  const savedSection = localStorage.getItem(LAST_SECTION_KEY);
+  switchSection(['play', 'collection', 'predictions'].includes(savedSection) ? savedSection : 'play');
 
   // PWA install prompt after 30s
   setTimeout(showInstallPrompt, 30000);
@@ -1344,7 +1352,7 @@ function bindProfileOpener(el, handler) {
 }
 
 function switchSection(name) {
-  if (!['play', 'collection'].includes(name)) name = 'play';
+  if (!['play', 'collection', 'predictions'].includes(name)) name = 'play';
   localStorage.setItem(LAST_SECTION_KEY, name);
   // Update tabs
   bottomNav.querySelectorAll('.nav-tab').forEach(t => {
@@ -1359,6 +1367,12 @@ function switchSection(name) {
   if (name === 'collection' && target.dataset.loaded === 'false') {
     target.dataset.loaded = 'true';
     renderCollection('nations');
+  }
+  if (name === 'predictions' && target.dataset.loaded === 'false') {
+    target.dataset.loaded = 'true';
+    initPredictionsSection();
+  } else if (name === 'predictions') {
+    refreshPredictionsView();
   }
 }
 
@@ -2753,26 +2767,60 @@ async function showFriendCollection(fData) {
   }
 
   // Load friend collection from Firestore
-  let friendCards = {};
+  friendCardsCache = {};
   if (isOnlineApp() && fData.uid) {
     try {
       const snap = await db.collection('pd_users').doc(fData.uid).collection('collection').get();
-      snap.forEach(doc => { friendCards[doc.id] = doc.data(); });
+      snap.forEach(doc => { friendCardsCache[doc.id] = doc.data(); });
     } catch (err) {
       console.warn('Friend collection load error:', err);
     }
   }
 
-  grid.innerHTML = '';
-  const owned = Object.keys(friendCards).length;
+  // Progress summary
+  const owned = Object.keys(friendCardsCache).length;
   const total = ALL_CARDS.length;
   const pct = Math.round((owned / total) * 100);
-  grid.insertAdjacentHTML('beforebegin',
-    `<p style="padding:12px 0 16px;font-size:13px;font-weight:800;color:var(--text-muted);text-align:center">${owned}/${total} carte · ${pct}%</p>`
-  );
+  const progressEl = $('friend-collection-progress');
+  if (progressEl) {
+    progressEl.innerHTML = `
+      <div class="friend-progress-text">
+        <span>${owned}/${total} carte</span>
+        <span>${pct}%</span>
+      </div>
+      <div class="friend-progress-bar"><div style="width:${pct}%"></div></div>
+    `;
+  }
 
-  ALL_CARDS.forEach(card => {
-    const isOwned = !!friendCards[card.id];
+  renderFriendCollectionGrid('nations');
+
+  // Tab handlers
+  const tabWrap = $('friend-collection-tabs');
+  if (tabWrap && !tabWrap._bound) {
+    tabWrap._bound = true;
+    tabWrap.querySelectorAll('.friend-tab-pill').forEach(t => {
+      bindProfileOpener(t, () => {
+        tabWrap.querySelectorAll('.friend-tab-pill').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        renderFriendCollectionGrid(t.dataset.pack);
+      });
+    });
+  }
+}
+
+// In-memory cache of the currently viewed friend's cards
+let friendCardsCache = {};
+
+function renderFriendCollectionGrid(pack) {
+  const grid = $('friend-collection-grid');
+  if (!grid) return;
+  const cards = getCardsByPack(pack);
+  const rarityOrder = { legendary: 0, epic: 1, rare: 2, common: 3 };
+  cards.sort((a, b) => rarityOrder[a.rarity] - rarityOrder[b.rarity]);
+
+  grid.innerHTML = '';
+  cards.forEach(card => {
+    const isOwned = !!friendCardsCache[card.id];
     const el = document.createElement('div');
     el.className = `card-item rarity-${card.rarity} ${isOwned ? '' : 'locked'}`;
     if (isOwned) {
@@ -3474,7 +3522,410 @@ function showInstallPrompt() {
 }
 
 // ════════════════════════════════════════════════════════════
-// 12. UTILITIES
+// 12. PRONOSTICI MODULE
+// ════════════════════════════════════════════════════════════
+
+let predictionsState = {
+  matches: {},          // matchId -> { homeScore, awayScore, status, kickoffMs }
+  myPredictions: {},    // matchId -> { homeScore, awayScore, claimed }
+  isAdmin: false,
+  ready: false
+};
+let predictionsTick = null;
+
+function isPdAdminUser() {
+  return currentUser && PD_ADMIN_UIDS.includes(currentUser.uid);
+}
+
+function isPredictionLocked(match) {
+  const kickoff = (match.kickoffMs || (match.kickoff ? new Date(match.kickoff).getTime() : 0));
+  return Date.now() >= kickoff - (PREDICTION_LOCK_SECONDS * 1000);
+}
+
+function isMatchStarted(match) {
+  const kickoff = (match.kickoffMs || (match.kickoff ? new Date(match.kickoff).getTime() : 0));
+  return Date.now() >= kickoff;
+}
+
+async function initPredictionsSection() {
+  predictionsState.isAdmin = isPdAdminUser();
+  await loadAllMatches();
+  await loadMyPredictions();
+  predictionsState.ready = true;
+  refreshPredictionsView();
+  startPredictionsTicker();
+}
+
+function startPredictionsTicker() {
+  if (predictionsTick) clearInterval(predictionsTick);
+  // Re-render every 30s so lock/status badges update live
+  predictionsTick = setInterval(() => {
+    if ($('section-predictions')?.classList.contains('active')) {
+      refreshPredictionsView();
+    }
+  }, 30000);
+}
+
+// Load all match docs (results + status) in a single batch
+async function loadAllMatches() {
+  predictionsState.matches = {};
+  if (typeof WC26_MATCHES_FULL === 'undefined') return;
+  // Seed defaults from static schedule
+  WC26_MATCHES_FULL.forEach(m => {
+    predictionsState.matches[m.id] = {
+      id: m.id,
+      home: m.home.name,
+      away: m.away.name,
+      homeCode: m.home.code,
+      awayCode: m.away.code,
+      kickoff: m.kickoff,
+      kickoffMs: m.kickoffMs,
+      phase: m.phase,
+      homeScore: null,
+      awayScore: null,
+      status: 'scheduled'
+    };
+  });
+  if (!isOnlineApp()) return;
+  try {
+    const snap = await db.collection('pd_matches').get();
+    snap.forEach(doc => {
+      const d = doc.data();
+      const base = predictionsState.matches[doc.id];
+      if (!base) return;
+      predictionsState.matches[doc.id] = {
+        ...base,
+        homeScore: (d.homeScore !== undefined && d.homeScore !== null) ? d.homeScore : null,
+        awayScore: (d.awayScore !== undefined && d.awayScore !== null) ? d.awayScore : null,
+        status: d.status || (d.homeScore !== undefined && d.homeScore !== null ? 'finished' : 'scheduled')
+      };
+    });
+  } catch (err) {
+    console.warn('Matches load error:', err);
+  }
+}
+
+// Load the current user's predictions
+async function loadMyPredictions() {
+  predictionsState.myPredictions = {};
+  predictionsState.claimed = loadClaimedSet();
+  if (!isOnlineApp() || !currentUser) return;
+  // Doc ids are `${matchId}_${uid}` — fetch each directly (rules allow reading
+  // only documents ending with the caller's own uid).
+  const ids = (typeof WC26_MATCHES_FULL !== 'undefined' ? WC26_MATCHES_FULL : [])
+    .map(m => `${m.id}_${currentUser.uid}`);
+  try {
+    const snaps = await Promise.all(
+      ids.map(id =>
+        db.collection('pd_predictions').doc(id).get()
+          .then(s => s.exists ? s : null)
+          .catch(() => null)
+      )
+    );
+    snaps.forEach(s => {
+      if (!s || !s.exists) return;
+      const d = s.data();
+      predictionsState.myPredictions[d.matchId] = {
+        matchId: d.matchId,
+        homeScore: d.homeScore,
+        awayScore: d.awayScore,
+        uid: d.uid
+      };
+    });
+  } catch (err) {
+    console.warn('My predictions load error:', err);
+  }
+}
+
+function loadClaimedSet() {
+  try { return new Set(JSON.parse(localStorage.getItem(PD_PRED_CLAIMED_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+
+function saveClaimedSet() {
+  try { localStorage.setItem(PD_PRED_CLAIMED_KEY, JSON.stringify([...predictionsState.claimed])); }
+  catch { /* ignore */ }
+}
+
+function renderPredictionsStats() {
+  const my = predictionsState.myPredictions || {};
+  const played = Object.keys(my).length;
+  let won = 0;
+  Object.keys(my).forEach(mid => {
+    const m = predictionsState.matches[mid];
+    const p = my[mid];
+    if (m && m.status === 'finished' && m.homeScore !== null && m.homeScore !== undefined &&
+        m.homeScore === p.homeScore && m.awayScore === p.awayScore) won++;
+  });
+  const pe = $('pred-played'); if (pe) pe.textContent = played;
+  const we = $('pred-won'); if (we) we.textContent = won;
+}
+
+function refreshPredictionsView() {
+  const list = $('predictions-list');
+  if (!list) return;
+  if (!predictionsState.ready) {
+    list.innerHTML = '<div class="empty-state"><p>Caricamento partite…</p></div>';
+    return;
+  }
+
+  // Process rewards first (silent claim on re-entry)
+  processPendingRewards().catch(err => console.warn('Reward process skipped:', err));
+
+  // Sort: not-finished matches by kickoff asc (closest first),
+  // finished matches (with result) pushed below, also by kickoff asc.
+  const all = Object.values(predictionsState.matches);
+  const upcoming = all.filter(m => m.status !== 'finished').sort((a, b) => a.kickoffMs - b.kickoffMs);
+  const finished = all.filter(m => m.status === 'finished').sort((a, b) => a.kickoffMs - b.kickoffMs);
+
+  list.innerHTML = '';
+  if (!upcoming.length && !finished.length) {
+    list.innerHTML = '<div class="empty-state"><p>Nessuna partita disponibile.</p></div>';
+    renderPredictionsStats();
+    return;
+  }
+
+  // Optional admin badge at top
+  if (predictionsState.isAdmin) {
+    const banner = document.createElement('div');
+    banner.className = 'pred-admin-banner';
+    banner.innerHTML = `<span class="pred-admin-dot"></span> Console admin attiva · puoi impostare i risultati`;
+    list.appendChild(banner);
+  }
+
+  upcoming.forEach(m => list.appendChild(buildMatchCard(m, false)));
+  if (finished.length) {
+    const sep = document.createElement('div');
+    sep.className = 'pred-section-sep';
+    sep.textContent = 'Concluse';
+    list.appendChild(sep);
+    finished.forEach(m => list.appendChild(buildMatchCard(m, true)));
+  }
+  renderPredictionsStats();
+}
+
+function buildMatchCard(m, isFinished) {
+  const card = document.createElement('div');
+  card.className = 'match-card' + (isFinished ? ' match-card--finished' : '');
+  card.dataset.matchId = m.id;
+
+  const locked = isPredictionLocked(m);
+  const my = predictionsState.myPredictions[m.id];
+  const kickDate = new Date(m.kickoffMs);
+  const dateStr = kickDate.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: 'short' });
+  const timeStr = kickDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+  const homeFlag = `<img class="match-flag" src="${flagUrl(m.homeCode, 80)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`;
+  const awayFlag = `<img class="match-flag" src="${flagUrl(m.awayCode, 80)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`;
+
+  let statusBadge = '';
+  if (m.status === 'finished' && m.homeScore !== null && m.homeScore !== undefined) {
+    statusBadge = `<span class="match-status match-status--done">Finale</span>`;
+  } else if (locked) {
+    statusBadge = `<span class="match-status match-status--locked">Bloccata</span>`;
+  } else {
+    statusBadge = `<span class="match-status match-status--open">Aperta</span>`;
+  }
+
+  // Result / input row
+  let middle = '';
+  if (isFinished && m.homeScore !== null && m.homeScore !== undefined) {
+    middle = `<div class="match-score match-score--final">${m.homeScore}<span class="match-score-sep">:</span>${m.awayScore}</div>`;
+  } else {
+    const hVal = my ? my.homeScore : '';
+    const aVal = my ? my.awayScore : '';
+    middle = `
+      <div class="match-score ${locked ? 'match-score--locked' : ''}">
+        <input type="number" inputmode="numeric" min="0" max="99" class="score-input"
+               data-side="home" data-match="${m.id}" value="${hVal}" placeholder="–" ${locked ? 'disabled' : ''} aria-label="Gol ${escapeAttr(m.home)}">
+        <span class="match-score-sep">:</span>
+        <input type="number" inputmode="numeric" min="0" max="99" class="score-input"
+               data-side="away" data-match="${m.id}" value="${aVal}" placeholder="–" ${locked ? 'disabled' : ''} aria-label="Gol ${escapeAttr(m.away)}">
+      </div>`;
+  }
+
+  // Outcome line (for finished matches where user had a prediction)
+  let outcome = '';
+  if (isFinished && my) {
+    let correct = (m.homeScore === my.homeScore && m.awayScore === my.awayScore);
+    const claimed = predictionsState.claimed && predictionsState.claimed.has(m.id);
+    if (correct) {
+      outcome = `<div class="match-outcome match-outcome--win">${claimed ? 'Vinto! +10 pacchetti' : 'Vinto! Ricompensa in arrivo…'}</div>`;
+    } else {
+      outcome = `<div class="match-outcome match-outcome--lose">Risultato non indovinato</div>`;
+    }
+  } else if (!isFinished && my) {
+    outcome = `<div class="match-outcome match-outcome--pending">Il tuo pronostico: ${my.homeScore} – ${my.awayScore}</div>`;
+  }
+
+  // Admin controls
+  let adminControls = '';
+  if (predictionsState.isAdmin) {
+    const hs = (m.homeScore !== null && m.homeScore !== undefined) ? m.homeScore : '';
+    const as = (m.awayScore !== null && m.awayScore !== undefined) ? m.awayScore : '';
+    adminControls = `
+      <div class="match-admin">
+        <span class="match-admin-label">Admin:</span>
+        <input type="number" inputmode="numeric" min="0" max="99" class="score-input admin-score"
+               data-side="home" data-match="${m.id}" value="${hs}" placeholder="–">
+        <span class="match-score-sep">:</span>
+        <input type="number" inputmode="numeric" min="0" max="99" class="score-input admin-score"
+               data-side="away" data-match="${m.id}" value="${as}" placeholder="–">
+        <button class="btn-admin-save" data-match="${m.id}">Salva risultato</button>
+      </div>`;
+  }
+
+  card.innerHTML = `
+    <div class="match-top">
+      <span class="match-phase">${escapeHtml(m.phase)}</span>
+      ${statusBadge}
+    </div>
+    <div class="match-teams">
+      <div class="match-side match-side--home">
+        ${homeFlag}
+        <span class="match-team-name">${escapeHtml(m.home)}</span>
+      </div>
+      ${middle}
+      <div class="match-side match-side--away">
+        ${awayFlag}
+        <span class="match-team-name">${escapeHtml(m.away)}</span>
+      </div>
+    </div>
+    <div class="match-foot">
+      <span class="match-time">${escapeHtml(dateStr)} · ${escapeHtml(timeStr)}</span>
+      ${outcome}
+    </div>
+    ${adminControls}
+  `;
+
+  // Bind score inputs (user)
+  if (!locked && !isFinished) {
+    card.querySelectorAll('.score-input[data-side]').forEach(inp => {
+      inp.addEventListener('change', () => savePredictionFromInputs(card, m.id));
+      inp.addEventListener('blur',   () => savePredictionFromInputs(card, m.id));
+    });
+  }
+  // Bind admin save
+  if (predictionsState.isAdmin) {
+    const btnSave = card.querySelector('.btn-admin-save');
+    if (btnSave) btnSave.addEventListener('click', () => saveMatchResultFromCard(card, m.id));
+  }
+
+  return card;
+}
+
+async function savePredictionFromInputs(card, matchId) {
+  if (!isOnlineApp() || !currentUser) { showToast('Accedi per salvare.'); return; }
+  const hInp = card.querySelector('.score-input[data-side="home"]');
+  const aInp = card.querySelector('.score-input[data-side="away"]');
+  const m = predictionsState.matches[matchId];
+  if (!m || isPredictionLocked(m)) {
+    showToast('La partita è bloccata.');
+    refreshPredictionsView();
+    return;
+  }
+  if (hInp.value === '' || aInp.value === '') return; // wait for both
+  const homeScore = clampScore(hInp.value);
+  const awayScore = clampScore(aInp.value);
+  if (homeScore === null || awayScore === null) {
+    showToast('Inserisci un punteggio valido (0–99).');
+    return;
+  }
+  const predId = `${matchId}_${currentUser.uid}`;
+  try {
+    await db.collection('pd_predictions').doc(predId).set({
+      matchId,
+      uid: currentUser.uid,
+      homeScore,
+      awayScore,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    predictionsState.myPredictions[matchId] = { matchId, uid: currentUser.uid, homeScore, awayScore };
+    showToast('Pronostico salvato.');
+    refreshPredictionsView();
+  } catch (err) {
+    console.error('Save prediction error:', err);
+    showToast('Impossibile salvare. La partita potrebbe essere già iniziata.');
+  }
+}
+
+async function saveMatchResultFromCard(card, matchId) {
+  if (!predictionsState.isAdmin || !isOnlineApp()) return;
+  const hInp = card.querySelector('.admin-score[data-side="home"]');
+  const aInp = card.querySelector('.admin-score[data-side="away"]');
+  const homeScore = clampScore(hInp.value);
+  const awayScore = clampScore(aInp.value);
+  if (homeScore === null || awayScore === null) {
+    showToast('Inserisci un risultato valido (0–99).');
+    return;
+  }
+  try {
+    await db.collection('pd_matches').doc(matchId).set({
+      homeScore,
+      awayScore,
+      status: 'finished',
+      finishedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    predictionsState.matches[matchId] = {
+      ...predictionsState.matches[matchId],
+      homeScore, awayScore, status: 'finished'
+    };
+    showToast('Risultato pubblicato.');
+    refreshPredictionsView();
+  } catch (err) {
+    console.error('Save match result error:', err);
+    showToast('Errore nel salvataggio del risultato.');
+  }
+}
+
+function clampScore(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Math.floor(Number(v));
+  if (!Number.isFinite(n) || n < 0 || n > 99) return null;
+  return n;
+}
+
+// Award pending rewards for finished matches the user predicted correctly.
+// Called on view refresh; claims at most once per match (tracked locally).
+async function processPendingRewards() {
+  if (!isOnlineApp() || !currentUser) return;
+  if (!predictionsState.claimed) predictionsState.claimed = loadClaimedSet();
+  const my = predictionsState.myPredictions || {};
+  const rewards = [];
+  Object.keys(my).forEach(mid => {
+    const m = predictionsState.matches[mid];
+    const p = my[mid];
+    if (!m || m.status !== 'finished') return;
+    if (m.homeScore === null || m.homeScore === undefined) return;
+    if (predictionsState.claimed.has(mid)) return;
+    const correct = (m.homeScore === p.homeScore && m.awayScore === p.awayScore);
+    if (correct) rewards.push(mid);
+  });
+  if (!rewards.length) return;
+
+  try {
+    await db.collection('pd_users').doc(currentUser.uid).update({
+      bonusPacks: firebase.firestore.FieldValue.increment(rewards.length * PREDICTION_REWARD)
+    });
+    userData.bonusPacks = (userData.bonusPacks || 0) + rewards.length * PREDICTION_REWARD;
+    rewards.forEach(mid => predictionsState.claimed.add(mid));
+    saveClaimedSet();
+    saveLocalSession();
+    updatePackButtons();
+    if (typeof updateHeaderUI === 'function') updateHeaderUI();
+    if (rewards.length === 1) {
+      showToast(`Pronostico azzeccato! +${PREDICTION_REWARD} pacchetti`);
+    } else {
+      showToast(`${rewards.length} pronostici vinti! +${rewards.length * PREDICTION_REWARD} pacchetti`);
+    }
+  } catch (err) {
+    console.warn('Reward claim failed (will retry next visit):', err);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// 13. UTILITIES
 // ════════════════════════════════════════════════════════════
 
 function showToast(message) {
