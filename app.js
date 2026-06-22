@@ -1316,10 +1316,31 @@ function setupNavigation() {
   });
 
   // Header avatar → profile
-  $('header-profile-btn').addEventListener('click', openProfilePanel);
-  $('profile-close').addEventListener('click', closeProfilePanel);
+  // Bind on the button directly AND via document-level delegation. On iOS/Android
+  // standalone PWA the direct click on a wrapper button around an <img> can be
+  // dropped by the WebView; delegation guarantees the handler still fires.
+  bindProfileOpener($('header-profile-btn'), openProfilePanel);
+  bindProfileOpener($('profile-close'), closeProfilePanel);
   const profileOverlay = $('profile-panel-overlay');
-  if (profileOverlay) profileOverlay.addEventListener('click', closeProfilePanel);
+  if (profileOverlay) bindProfileOpener(profileOverlay, closeProfilePanel);
+}
+
+// Unified binding for tap targets that open/close the profile panel.
+// Uses click (works everywhere) plus touchend-without-scroll as a fallback for
+// iOS WKWebView standalone where bare-wrapper button clicks are sometimes lost.
+function bindProfileOpener(el, handler) {
+  if (!el || el._profileBound) return;
+  el._profileBound = true;
+  el.style.cursor = el.style.cursor || 'pointer';
+  el.addEventListener('click', handler);
+  let touchMoved = false;
+  el.addEventListener('touchstart', () => { touchMoved = false; }, { passive: true });
+  el.addEventListener('touchmove', () => { touchMoved = true; }, { passive: true });
+  el.addEventListener('touchend', e => {
+    if (touchMoved) return;
+    e.preventDefault();
+    handler(e);
+  }, { passive: false });
 }
 
 function switchSection(name) {
@@ -1346,6 +1367,10 @@ function openProfilePanel() {
   if (!panel) return;
   panel.classList.add('active');
   panel.setAttribute('aria-hidden', 'false');
+  // Force a reflow so the compositing layer picks up the transform change on
+  // iOS standalone WKWebView, where fixed+transformed elements sometimes stay
+  // at their previous frame until something triggers a paint.
+  void panel.offsetHeight;
   // Render after panel is visible so a crash here doesn't block the slide-in
   try { renderProfile(); } catch (err) { console.warn('renderProfile error:', err); }
 }
@@ -1355,6 +1380,7 @@ function closeProfilePanel() {
   if (!panel) return;
   panel.classList.remove('active');
   panel.setAttribute('aria-hidden', 'true');
+  void panel.offsetHeight;
 }
 
 function updateHeaderUI() {
