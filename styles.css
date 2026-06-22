@@ -57,10 +57,7 @@ body {
   font-size: 14px;
   line-height: 1.5;
   color: var(--text-primary);
-  background:
-    linear-gradient(145deg, rgba(6, 18, 15, 0.98), rgba(9, 25, 20, 0.98) 48%, rgba(25, 18, 10, 0.96)),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 92px),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.017) 0 1px, transparent 1px 92px);
+  background: var(--bg-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -71,11 +68,7 @@ body::before {
   inset: 0;
   z-index: -2;
   pointer-events: none;
-  background:
-    linear-gradient(90deg, transparent 0 11%, rgba(66, 211, 146, 0.045) 11.2% 11.6%, transparent 11.8% 88.2%, rgba(66, 211, 146, 0.045) 88.4% 88.8%, transparent 89%),
-    linear-gradient(0deg, transparent 0 49.6%, rgba(248, 195, 90, 0.055) 49.8% 50.2%, transparent 50.4%),
-    radial-gradient(circle at center, transparent 0 31vmin, rgba(255, 255, 255, 0.025) calc(31vmin + 2px), transparent calc(31vmin + 5px));
-  opacity: 0.76;
+  background: rgba(66, 211, 146, 0.02);
 }
 
 body::after {
@@ -85,7 +78,9 @@ body::after {
   height: 44vh;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(180deg, transparent, rgba(2, 8, 6, 0.92));
+  background: rgba(2, 8, 6, 0.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 ::selection {
@@ -236,9 +231,7 @@ a {
   justify-content: center;
   gap: 36px;
   padding: 32px 22px;
-  background:
-    linear-gradient(145deg, rgba(5, 17, 14, 0.98), rgba(11, 31, 25, 0.98), rgba(26, 19, 11, 0.98)),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 74px);
+  background: var(--bg-primary);
 }
 
 #login-screen.hidden {
@@ -259,9 +252,7 @@ a {
   height: 58px;
   border-radius: 18px;
   color: var(--accent);
-  background:
-    linear-gradient(145deg, rgba(66, 211, 146, 0.22), rgba(248, 195, 90, 0.12)),
-    rgba(255, 255, 255, 0.06);
+  background: rgba(66, 211, 146, 0.14);
   border: 1px solid rgba(233, 255, 245, 0.18);
   box-shadow: 0 18px 48px rgba(66, 211, 146, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
@@ -361,7 +352,7 @@ a {
   height: 24px;
   margin-right: 10px;
   border-radius: 99px;
-  background: linear-gradient(180deg, var(--accent), var(--accent-gold));
+  background: var(--accent);
   box-shadow: 0 0 24px rgba(66, 211, 146, 0.34);
 }
 
@@ -468,12 +459,8 @@ a {
 }
 
 .nav-tab.active::before {
-  /* Soft glass pill with a subtle accent tint — no gradient */
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--accent) 16%, transparent),
-    color-mix(in srgb, var(--accent) 7%, transparent)
-  );
+  /* Solid glass pill with a subtle accent tint — no gradient */
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--accent) 38%, transparent),
     0 0 22px color-mix(in srgb, var(--accent) 22%, transparent);
@@ -535,7 +522,7 @@ a {
   border-radius: 28px;
   opacity: 0;
   pointer-events: none;
-  background: radial-gradient(circle, color-mix(in srgb, var(--pack-accent, var(--accent)) 72%, transparent) 0%, rgba(66, 211, 146, 0.22) 42%, transparent 74%);
+  background: color-mix(in srgb, var(--pack-accent, var(--accent)) 36%, transparent);
   filter: blur(18px);
   mix-blend-mode: screen;
   animation: glow-pulse 1.25s ease-in-out infinite;
@@ -582,8 +569,7 @@ a {
   border: 1px solid color-mix(in srgb, var(--pack-accent, var(--accent)) 26%, rgba(233, 255, 245, 0.16));
   border-radius: 26px;
   /* Solid tinted body — accent-grounded, not see-through */
-  background:
-    radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--pack-accent, var(--accent)) 32%, #0b1a16) 0%, #0a1714 54%, #071310 100%);
+  background: color-mix(in srgb, var(--pack-accent, var(--accent)) 14%, #0a1714);
   box-shadow:
     0 22px 60px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -593,15 +579,13 @@ a {
   transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
 }
 
-/* Subtle vertical light sweep on the surface */
+/* Soft solid highlight on the surface */
 .pack-card::before {
   content: '';
   position: absolute;
   inset: 0;
   z-index: 0;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 38%),
-    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.022) 0 2px, transparent 2px 16px);
+  background: rgba(255, 255, 255, 0.04);
   pointer-events: none;
 }
 
@@ -638,7 +622,7 @@ a {
   z-index: 1;
   width: 60%;
   height: 180%;
-  background: linear-gradient(100deg, transparent, color-mix(in srgb, var(--pack-accent, var(--accent)) 26%, transparent), transparent);
+  background: color-mix(in srgb, var(--pack-accent, var(--accent)) 22%, transparent);
   transform: rotate(8deg);
   opacity: 0.5;
   pointer-events: none;
@@ -661,8 +645,7 @@ a {
   border-radius: 18px;
   color: var(--pack-accent, var(--accent));
   background:
-    radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--pack-accent, var(--accent)) 30%, transparent), transparent 70%),
-    rgba(0, 0, 0, 0.28);
+    color-mix(in srgb, var(--pack-accent, var(--accent)) 20%, rgba(0, 0, 0, 0.36));
   border: 1px solid color-mix(in srgb, var(--pack-accent, var(--accent)) 48%, rgba(255, 255, 255, 0.14));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.22),
@@ -755,7 +738,7 @@ a {
 .pack-dot.active,
 .tutorial-dot.active {
   width: 24px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-gold));
+  background: var(--accent);
 }
 
 .action-buttons {
@@ -783,7 +766,7 @@ a {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent-gold));
+  background: var(--accent);
   box-shadow: 0 0 8px rgba(66, 211, 146, 0.54);
   flex-shrink: 0;
 }
@@ -807,7 +790,7 @@ a {
   width: 100%;
   height: 58px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  background: linear-gradient(135deg, var(--accent), var(--accent-gold));
+  background: var(--accent);
   color: var(--accent-ink);
   box-shadow: 0 18px 48px rgba(66, 211, 146, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.24);
   font-size: 15px;
@@ -949,7 +932,7 @@ a {
 .challenge-progress-bar {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent), var(--accent-gold));
+  background: var(--accent);
   transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1011,7 +994,7 @@ a {
 .progress-bar-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent), var(--accent-gold), var(--accent-blue));
+  background: var(--accent);
   transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1120,9 +1103,7 @@ a {
   inset: 0;
   z-index: -1;
   opacity: 0.42;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 36%),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 16px);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .card-item:active {
@@ -1196,10 +1177,10 @@ a {
   display: block;
 }
 
-.card-mark.rarity-common { background: linear-gradient(145deg, #53615c, #1d2824); }
-.card-mark.rarity-rare { background: linear-gradient(145deg, #38bdf8, #0e4661); }
-.card-mark.rarity-epic { background: linear-gradient(145deg, #b27bff, #44225f); }
-.card-mark.rarity-legendary { background: linear-gradient(145deg, #f8c35a, #7a4211); color: #1b1003; }
+.card-mark.rarity-common { background: #39423f; }
+.card-mark.rarity-rare { background: #1f6e94; }
+.card-mark.rarity-epic { background: #6a3d8e; }
+.card-mark.rarity-legendary { background: #c98e34; color: #1b1003; }
 
 .card-mark-locked {
   color: var(--text-muted);
@@ -1261,24 +1242,24 @@ a {
 
 .card-item.rarity-common {
   border: 1px solid rgba(125, 138, 134, 0.45);
-  background: linear-gradient(145deg, #26332f, #101b18);
+  background: #1c2825;
 }
 
 .card-item.rarity-rare {
   border: 1px solid rgba(56, 189, 248, 0.55);
-  background: linear-gradient(145deg, #0e4661, #092633);
+  background: #0e3550;
   box-shadow: 0 0 24px rgba(56, 189, 248, 0.18);
 }
 
 .card-item.rarity-epic {
   border: 1px solid rgba(178, 123, 255, 0.58);
-  background: linear-gradient(145deg, #44225f, #1f1234);
+  background: #2f1646;
   box-shadow: 0 0 26px rgba(178, 123, 255, 0.22);
 }
 
 .card-item.rarity-legendary {
   border: 1px solid rgba(248, 195, 90, 0.66);
-  background: linear-gradient(145deg, #7a4211, #2f1d0b);
+  background: #4a2a10;
   box-shadow: 0 0 34px rgba(248, 195, 90, 0.28);
 }
 
@@ -1470,9 +1451,7 @@ a {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 38%),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 18px);
+  background: rgba(255, 255, 255, 0.05);
   opacity: 0.42;
 }
 
@@ -1489,7 +1468,7 @@ a {
 .reveal-card-back {
   transform: rotateY(180deg);
   border: 1px solid rgba(233, 255, 245, 0.16);
-  background: linear-gradient(145deg, #12241e, #07120f);
+  background: #0c1b16;
 }
 
 .back-pattern {
@@ -1598,9 +1577,9 @@ a {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background:
-    linear-gradient(115deg, rgba(248, 195, 90, 0.16), transparent 42%),
-    linear-gradient(245deg, transparent 48%, rgba(248, 195, 90, 0.12));
+  background: rgba(248, 195, 90, 0.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   animation: fade-in 0.4s ease forwards;
 }
 
@@ -1894,21 +1873,18 @@ a {
   position: absolute;
   inset: -40%;
   z-index: -1;
-  background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.18), transparent 30%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.16), transparent 60%);
+  filter: blur(20px);
   animation: spin 6s linear infinite;
 }
 
 .legendary-rays {
   position: absolute;
-  inset: -50%;
+  inset: -30%;
   z-index: -1;
-  background:
-    repeating-conic-gradient(
-      from 0deg,
-      rgba(255, 255, 255, 0.16) 0deg 6deg,
-      transparent 6deg 18deg
-    );
-  opacity: 0.5;
+  background: radial-gradient(circle, rgba(248, 195, 90, 0.22), transparent 65%);
+  filter: blur(28px);
+  opacity: 0.6;
   animation: spin 18s linear infinite;
   pointer-events: none;
 }
@@ -2263,7 +2239,7 @@ a {
   padding: 16px;
   border: 1px solid rgba(233, 255, 245, 0.12);
   border-radius: var(--radius-card);
-  background: linear-gradient(135deg, rgba(248, 255, 250, 0.05), rgba(66, 211, 146, 0.02));
+  background: rgba(66, 211, 146, 0.05);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
   transition: transform 0.24s ease, border-color 0.24s ease;
 }
@@ -2405,7 +2381,7 @@ a {
   padding: 14px 16px;
   border: 1px solid rgba(66, 211, 146, 0.25);
   border-radius: var(--radius-control);
-  background: linear-gradient(135deg, rgba(66, 211, 146, 0.14), rgba(248, 195, 90, 0.12));
+  background: rgba(66, 211, 146, 0.13);
   color: var(--text-primary);
   font-size: 14px;
   font-weight: 800;
@@ -2434,7 +2410,7 @@ a {
   padding: 14px 16px;
   border: 1px solid rgba(248, 195, 90, 0.36);
   border-radius: var(--radius-control);
-  background: linear-gradient(135deg, rgba(248, 195, 90, 0.18), rgba(66, 211, 146, 0.1));
+  background: rgba(248, 195, 90, 0.15);
   color: var(--accent-gold);
   font-size: 14px;
   font-weight: 800;
@@ -2537,7 +2513,7 @@ a {
 .btn-onboarding {
   width: 100%;
   min-height: 52px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-gold));
+  background: var(--accent);
   color: var(--accent-ink);
   font-size: 15px;
 }
@@ -3096,7 +3072,7 @@ body.modal-open {
   padding: 14px 16px;
   border: 1px solid rgba(255, 107, 95, 0.28);
   border-radius: var(--radius-control);
-  background: linear-gradient(135deg, rgba(255, 107, 95, 0.18), rgba(248, 195, 90, 0.12));
+  background: rgba(255, 107, 95, 0.16);
   color: #ffd8d4;
   font-size: 14px;
   font-weight: 800;
@@ -3209,7 +3185,7 @@ body.modal-open {
 
 .btn-confirm-reset {
   border: 1px solid rgba(255, 107, 95, 0.3);
-  background: linear-gradient(135deg, var(--accent-red), #ff8a77);
+  background: var(--accent-red);
   color: #230705;
 }
 
@@ -3558,7 +3534,7 @@ body.modal-open {
 .friend-progress-bar > div {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-blue));
+  background: var(--accent);
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
