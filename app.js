@@ -60,7 +60,7 @@ const FOOTBALL_API_DEFAULT_SEASON = 2025;
 // Admin console for Pronostici: list of Firebase Auth UIDs that can set
 // match results. Replace/add your own uid(s) here.
 const PD_ADMIN_UIDS = [
-  'REPLACE_WITH_YOUR_AUTH_UID'
+  'ZTCTToeJKUSo7AAtARvMRi2TLQ83'
 ];
 const PREDICTION_REWARD = 10;        // bonus packs for a correct score
 const PREDICTION_LOCK_SECONDS = 60;  // lock predictions this many seconds before kickoff
