@@ -4036,26 +4036,42 @@ async function savePredictionFromInputs(card, matchId) {
     return;
   }
   const predId = `${matchId}_${currentUser.uid}`;
+  // First save is a create (full doc); subsequent edits are an update, which
+  // the Firestore rules restrict to only {homeScore, awayScore, updatedAt}.
+  // Writing the full payload on edit would re-touch matchId/uid/createdAt and
+  // be rejected with permission-denied — so we branch here.
+  const alreadyExists = !!predictionsState.myPredictions[matchId];
+  const createPayload = {
+    matchId,
+    uid: currentUser.uid,
+    homeScore,
+    awayScore,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
   try {
-    await runFirestoreWrite(() => db.collection('pd_predictions').doc(predId).set({
-      matchId,
-      uid: currentUser.uid,
-      homeScore,
-      awayScore,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true }));
+    const write = alreadyExists
+      ? () => db.collection('pd_predictions').doc(predId).update({
+          homeScore, awayScore, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        })
+      : () => db.collection('pd_predictions').doc(predId).set(createPayload);
+    try {
+      await runFirestoreWrite(write);
+    } catch (err) {
+      // Edge case: local cache says the doc exists, but Firestore doesn't
+      // (e.g. cleared server-side). Fall back to a create and retry.
+      if (alreadyExists && (err?.code === 'not-found')) {
+        await runFirestoreWrite(() => db.collection('pd_predictions').doc(predId).set(createPayload));
+      } else {
+        throw err;
+      }
+    }
     predictionsState.myPredictions[matchId] = { matchId, uid: currentUser.uid, homeScore, awayScore };
     showToast('Pronostico salvato.');
     refreshPredictionsView();
   } catch (err) {
     console.error('Save prediction error:', err);
-    const code = err?.code || '';
-    if (code === 'permission-denied') {
-      showToast('Partita già iniziata: pronostici chiusi.');
-    } else {
-      showToast('Salvataggio non riuscito. Riprova tra un attimo.');
-    }
+    showToast('Salvataggio non riuscito. Riprova tra un attimo.');
   }
 }
 
