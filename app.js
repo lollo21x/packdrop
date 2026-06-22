@@ -183,7 +183,7 @@ const PLAYER_API_LOOKUP = {
   // photoId = direct API-Sports player ID → URL: https://media.api-sports.io/football/players/{id}.png
   icon_pele:          { search: 'Pele', photoId: 164082 },
   icon_maradona:      { search: 'Maradona', photoId: 7930 },
-  icon_zidane:        { search: 'Zidane', photoId: 1485 },
+  icon_zidane:        { search: 'Zidane', team: 541, season: 2006 },
   icon_ronaldo9:      { search: 'Ronaldo Nazario', photoId: 3334 },
   icon_cruyff:        { search: 'Cruyff', photoId: 164200 },
   icon_beckenbauer:   { search: 'Beckenbauer', photoId: 164201 },
@@ -212,7 +212,7 @@ const PLAYER_API_LOOKUP = {
   icon_valderrama:    { search: 'Valderrama', photoId: 164213 },
   icon_asprilla:      { search: 'Asprilla', photoId: 164214 },
   icon_larsson:       { search: 'Larsson', photoId: 164215 },
-  icon_ibrahimovic:   { search: 'Ibrahimovic', photoId: 1485, team: 489, season: 2018 },
+  icon_ibrahimovic:   { search: 'Ibrahimovic', team: 489, season: 2021 },
   icon_weah:          { search: 'Weah', photoId: 164216 },
   icon_drogba:        { search: 'Drogba', team: 49, season: 2014 },
   icon_essien:        { search: 'Essien', photoId: 164217 },
@@ -253,6 +253,81 @@ function scheduleIdle(callback, timeout = 1500) {
   setTimeout(callback, 0);
 }
 
+// ── IndexedDB photo blob storage ──
+const PHOTO_IDB_NAME = 'packdrop-photos-v1';
+const PHOTO_STORE_NAME = 'playerPhotos';
+
+function openPhotoDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('IDB not supported')); return; }
+    const req = indexedDB.open(PHOTO_IDB_NAME, 1);
+    req.onupgradeneeded = e => {
+      const idb = e.target.result;
+      if (!idb.objectStoreNames.contains(PHOTO_STORE_NAME)) {
+        idb.createObjectStore(PHOTO_STORE_NAME);
+      }
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getPhotoFromIDB(cardId) {
+  try {
+    const idb = await openPhotoDB();
+    return new Promise((resolve, reject) => {
+      const tx = idb.transaction(PHOTO_STORE_NAME, 'readonly');
+      const store = tx.objectStore(PHOTO_STORE_NAME);
+      const req = store.get(cardId);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+      tx.oncomplete = () => idb.close();
+    });
+  } catch (_) {
+    return null;
+  }
+}
+
+async function savePhotoToIDB(cardId, blob) {
+  try {
+    const idb = await openPhotoDB();
+    return new Promise((resolve, reject) => {
+      const tx = idb.transaction(PHOTO_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(PHOTO_STORE_NAME);
+      const req = store.put(blob, cardId);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => reject(req.error);
+      tx.oncomplete = () => idb.close();
+    });
+  } catch (_) {
+    return false;
+  }
+}
+
+// ── Firestore photo URL cache (cross-device sharing) ──
+const FIRESTORE_PHOTOS_COLL = 'pd_player_photos';
+
+async function getPhotoUrlFromFirestore(cardId) {
+  if (!firebaseReady || !db) return null;
+  try {
+    const doc = await db.collection(FIRESTORE_PHOTOS_COLL).doc(cardId).get();
+    if (doc.exists && doc.data()?.url) return doc.data().url;
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function savePhotoUrlToFirestore(cardId, url) {
+  if (!firebaseReady || !db || !url) return;
+  try {
+    await db.collection(FIRESTORE_PHOTOS_COLL).doc(cardId).set({
+      url,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (_) {}
+}
+
 function escapeCssIdent(value) {
   if (window.CSS?.escape) return CSS.escape(value);
   return String(value).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
@@ -277,7 +352,20 @@ function loadPlayerPhotoCache() {
     if (!parsed || typeof parsed !== 'object') return {};
     const cleaned = {};
     Object.entries(parsed).forEach(([k, v]) => {
-      if (v && v.photo) cleaned[k] = v; // Still stores remote URLs as fallback
+      if (!v) return;
+      // Discard old-format blob: URLs – they're invalid after page reload
+      const url = v.remoteUrl || v.photo || null;
+      const isValid = url && url.startsWith('http');
+      if (isValid) {
+        cleaned[k] = {
+          photo: url,      // use remote URL immediately for display
+          remoteUrl: url,
+          failedAt: null,
+          updatedAt: v.updatedAt || null
+        };
+      } else if (v.failedAt) {
+        cleaned[k] = { failedAt: v.failedAt };
+      }
     });
     return cleaned;
   } catch (err) {
@@ -290,7 +378,18 @@ playerPhotoCache = loadPlayerPhotoCache();
 
 function savePlayerPhotoCache() {
   try {
-    localStorage.setItem(PLAYER_PHOTO_CACHE_KEY, JSON.stringify(playerPhotoCache));
+    const toSave = {};
+    Object.entries(playerPhotoCache).forEach(([k, v]) => {
+      if (!v) return;
+      // Only persist remote http URLs – blob: URLs are session-only
+      const remoteUrl = v.remoteUrl || (v.photo && v.photo.startsWith('http') ? v.photo : null);
+      if (remoteUrl) {
+        toSave[k] = { remoteUrl, updatedAt: v.updatedAt || Date.now() };
+      } else if (v.failedAt) {
+        toSave[k] = { failedAt: v.failedAt };
+      }
+    });
+    localStorage.setItem(PLAYER_PHOTO_CACHE_KEY, JSON.stringify(toSave));
   } catch (err) {
     console.warn('Player photo cache save failed:', err);
   }
@@ -369,7 +468,19 @@ async function fetchPlayerPhoto(card) {
     });
     if (!response.ok) throw new Error(`photo-api-${response.status}`);
     const data = await response.json();
-    return data?.response?.[0]?.player?.photo || '';
+    if (!data?.response?.length) return '';
+    const player = data.response[0]?.player;
+    if (!player?.photo) return '';
+    // Validate: at least one meaningful search word must appear in the player name
+    const searchWords = meta.search.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    const playerNameLower = [player.name, player.firstname, player.lastname]
+      .filter(Boolean).join(' ').toLowerCase();
+    const nameMatch = searchWords.some(w => playerNameLower.includes(w));
+    if (!nameMatch) {
+      console.warn(`Photo name mismatch: wanted "${meta.search}", got "${player.name}"`);
+      return '';
+    }
+    return player.photo;
   };
 
   // Try configured season first
@@ -404,61 +515,123 @@ function refreshPlayerPhotoMarks(cardId) {
 
 function queuePlayerPhoto(card) {
   if (!card || card.type === 'team' || playerPhotoInFlight.has(card.id)) return;
-  
-  // First, check if we have it in memory/IDB
-  if (playerPhotoCache[card.id]?.blobUrl) return;
 
-  const url = buildPlayerPhotoUrl(card);
-  if (!url) return;
+  const cached = playerPhotoCache[card.id];
 
-  const cachedFailure = playerPhotoCache[card.id]?.failedAt || 0;
-  if (cachedFailure && Date.now() - cachedFailure < 12 * 60 * 60 * 1000) return;
+  // Memory hit: have a valid blob URL from this session (best)
+  if (cached?.blobUrl) return;
+
+  // Already failed recently → skip
+  if (cached?.failedAt && Date.now() - cached.failedAt < 12 * 60 * 60 * 1000) return;
+
+  // Need API meta to do anything
+  const meta = getPlayerApiMeta(card);
+  if (!meta) return;
 
   playerPhotoInFlight.add(card.id);
+
   scheduleIdle(async () => {
     try {
-      // 1. Try IDB first
+      // ── Tier 1: IDB blob (offline-capable, instant) ──
       const blob = await getPhotoFromIDB(card.id);
-      if (blob) {
+      if (blob && blob.size > 200) {
         const objUrl = URL.createObjectURL(blob);
-        playerPhotoCache[card.id] = { ...playerPhotoCache[card.id], photo: objUrl, blobUrl: objUrl };
+        playerPhotoCache[card.id] = {
+          photo: objUrl,
+          blobUrl: objUrl,
+          remoteUrl: cached?.remoteUrl || null,
+          updatedAt: Date.now()
+        };
         refreshPlayerPhotoMarks(card.id);
         playerPhotoInFlight.delete(card.id);
         return;
       }
 
-      // 2. Fetch from API or direct URL
-      const photoUrl = await fetchPlayerPhoto(card);
-      if (photoUrl) {
-        // Download the actual image to cache as Blob
+      // ── If we already have a remote URL (from localStorage) → download blob ──
+      if (cached?.remoteUrl) {
         try {
-          const res = await fetch(photoUrl);
+          const res = await fetch(cached.remoteUrl, { mode: 'cors' });
           if (res.ok) {
             const newBlob = await res.blob();
-            await savePhotoToIDB(card.id, newBlob);
-            const objUrl = URL.createObjectURL(newBlob);
-            playerPhotoCache[card.id] = { photo: objUrl, blobUrl: objUrl, updatedAt: Date.now() };
-          } else {
-            // Fallback to URL if download fails
-            playerPhotoCache[card.id] = { photo: photoUrl, updatedAt: Date.now() };
+            if (newBlob.size > 200) {
+              await savePhotoToIDB(card.id, newBlob);
+              const objUrl = URL.createObjectURL(newBlob);
+              playerPhotoCache[card.id] = {
+                photo: objUrl,
+                blobUrl: objUrl,
+                remoteUrl: cached.remoteUrl,
+                updatedAt: Date.now()
+              };
+              refreshPlayerPhotoMarks(card.id);
+            }
           }
-        } catch (e) {
-          playerPhotoCache[card.id] = { photo: photoUrl, updatedAt: Date.now() };
+        } catch (_) { /* Keep using remote URL already shown */ }
+        playerPhotoInFlight.delete(card.id);
+        return;
+      }
+
+      // ── Tier 2: Firestore URL cache (other users already resolved this) ──
+      let photoUrl = null;
+      if (isOnlineApp()) {
+        photoUrl = await getPhotoUrlFromFirestore(card.id);
+      }
+
+      // ── Tier 3: API call (last resort) ──
+      if (!photoUrl) {
+        if (!navigator.onLine) {
+          playerPhotoCache[card.id] = { failedAt: Date.now() };
+          playerPhotoInFlight.delete(card.id);
+          return;
         }
+        photoUrl = await fetchPlayerPhoto(card);
+        // Share resolved URL with all other users via Firestore
+        if (photoUrl && isOnlineApp()) {
+          savePhotoUrlToFirestore(card.id, photoUrl).catch(() => {});
+        }
+      }
+
+      if (photoUrl) {
+        // Show remote URL immediately
+        playerPhotoCache[card.id] = {
+          photo: photoUrl,
+          remoteUrl: photoUrl,
+          updatedAt: Date.now()
+        };
         savePlayerPhotoCache();
         refreshPlayerPhotoMarks(card.id);
+
+        // Download blob in background for future offline use
+        try {
+          const res = await fetch(photoUrl, { mode: 'cors' });
+          if (res.ok) {
+            const newBlob = await res.blob();
+            if (newBlob.size > 200) {
+              await savePhotoToIDB(card.id, newBlob);
+              const objUrl = URL.createObjectURL(newBlob);
+              playerPhotoCache[card.id] = {
+                photo: objUrl,
+                blobUrl: objUrl,
+                remoteUrl: photoUrl,
+                updatedAt: Date.now()
+              };
+              // No need to call refreshPlayerPhotoMarks again: remote URL already rendering fine
+            }
+          }
+        } catch (_) {}
       } else {
         playerPhotoCache[card.id] = { failedAt: Date.now() };
         savePlayerPhotoCache();
       }
     } catch (err) {
-      console.warn('Player photo fetch failed:', card.id, err);
-      playerPhotoCache[card.id] = { failedAt: Date.now() };
-      savePlayerPhotoCache();
+      console.warn('Player photo queue failed:', card.id, err);
+      if (!playerPhotoCache[card.id]?.photo) {
+        playerPhotoCache[card.id] = { failedAt: Date.now() };
+        savePlayerPhotoCache();
+      }
     } finally {
       playerPhotoInFlight.delete(card.id);
     }
-  }, 500);
+  }, 800);
 }
 
 function cardMark(card, className = '') {
@@ -1169,10 +1342,12 @@ function switchSection(name) {
 }
 
 function openProfilePanel() {
-  renderProfile();
   const panel = $('profile-panel');
+  if (!panel) return;
   panel.classList.add('active');
   panel.setAttribute('aria-hidden', 'false');
+  // Render after panel is visible so a crash here doesn't block the slide-in
+  try { renderProfile(); } catch (err) { console.warn('renderProfile error:', err); }
 }
 
 function closeProfilePanel() {
@@ -2529,31 +2704,62 @@ async function renderFriendsList() {
 }
 
 // ── Friend Collection Modal ──
-function showFriendCollection(fData) {
+async function showFriendCollection(fData) {
   const modal = $('friend-collection-modal');
   if (!modal) return;
-  $('friend-modal-title').textContent = `Collezione di ${fData.displayName || fData.username}`;
+
+  $('friend-modal-title').textContent = `Collezione di ${fData.displayName || fData.username || 'Utente'}`;
   $('friend-modal-avatar').src = getUserAvatarUrl(fData, fData.uid || '');
-  
+
   const grid = $('friend-collection-grid');
+  grid.innerHTML = '<div class="empty-state"><p style="padding:20px;color:var(--text-muted)">Caricamento…</p></div>';
+
+  modal.classList.add('active');
+  modal.setAttribute('aria-hidden', 'false');
+
+  // Close handler
+  const closeBtn = $('friend-collection-close');
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+    };
+  }
+
+  // Load friend collection from Firestore
+  let friendCards = {};
+  if (isOnlineApp() && fData.uid) {
+    try {
+      const snap = await db.collection('pd_users').doc(fData.uid).collection('collection').get();
+      snap.forEach(doc => { friendCards[doc.id] = doc.data(); });
+    } catch (err) {
+      console.warn('Friend collection load error:', err);
+    }
+  }
+
   grid.innerHTML = '';
-  const friendCards = fData.collection || {};
-  
+  const owned = Object.keys(friendCards).length;
+  const total = ALL_CARDS.length;
+  const pct = Math.round((owned / total) * 100);
+  grid.insertAdjacentHTML('beforebegin',
+    `<p style="padding:12px 0 16px;font-size:13px;font-weight:800;color:var(--text-muted);text-align:center">${owned}/${total} carte · ${pct}%</p>`
+  );
+
   ALL_CARDS.forEach(card => {
     const isOwned = !!friendCards[card.id];
     const el = document.createElement('div');
-    el.className = `card-wrapper ${isOwned ? '' : 'missing'}`;
-    el.innerHTML = `
-      <div class="card ${card.rarity} type-${card.type}">
+    el.className = `card-item rarity-${card.rarity} ${isOwned ? '' : 'locked'}`;
+    if (isOwned) {
+      el.innerHTML = `
         ${cardMark(card)}
-        ${card.type === 'team' ? `<div class="card-name">${escapeHtml(card.name)}</div>` : ''}
-      </div>
-    `;
+        <span class="card-name">${escapeHtml(card.name)}</span>
+        <span class="card-rarity-badge" style="background:${RARITY_META[card.rarity].color}">${RARITY_META[card.rarity].label}</span>
+      `;
+    } else {
+      el.innerHTML = `${lockedCardMark()}<span class="card-name">???</span>`;
+    }
     grid.appendChild(el);
   });
-  
-  modal.classList.add('active');
-  modal.setAttribute('aria-hidden', 'false');
 }
 
 async function renderFriendRequests() {
