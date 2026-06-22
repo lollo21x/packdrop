@@ -3,7 +3,7 @@
 // App shell first, background refresh, data-safe updates
 // ============================================================
 
-const CACHE_NAME = 'packdrop-v1.2';
+const CACHE_NAME = 'packdrop-v1.3';
 
 const CORE_ASSETS = [
   './',
@@ -11,6 +11,7 @@ const CORE_ASSETS = [
   './styles.css',
   './app.js',
   './cards-data.js',
+  './matches-data.js',
   './firebase-config.js',
   './manifest.json',
   './icons/icon-192x192.png',
