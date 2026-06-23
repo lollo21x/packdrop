@@ -962,6 +962,14 @@ a {
   white-space: nowrap;
 }
 
+/* Marker for repeatable (daily-reset) challenges */
+.challenge-repeat {
+  margin-left: 4px;
+  font-size: 0.8em;
+  opacity: 0.7;
+  vertical-align: middle;
+}
+
 .collection-header {
   padding: 0 0 14px;
 }
