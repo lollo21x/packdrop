@@ -68,9 +68,15 @@ const UPDATE_IGNORED_UNTIL_KEY = 'packdrop:update-ignored-until';
 // enough that a genuinely offline user gets the cached UI quickly.
 const AUTH_RESTORE_TIMEOUT = 7000;
 const GITHUB_LATEST_COMMIT_URL = 'https://api.github.com/repos/lollo21x/packdrop/commits/main';
-const FOOTBALL_API_HOST = 'v3.football.api-sports.io';
-const FOOTBALL_API_KEY = '048d7f300beea42f42d12638b7a942ea';
-const FOOTBALL_API_DEFAULT_SEASON = 2025;
+// ── Player photos: TheSportsDB (free API, key "123") ──
+// Endpoint: https://www.thesportsdb.com/api/v1/json/123/searchplayers.php?p={name}
+// Response: player[].strThumb (profile photo) / player[].strCutout (transparent PNG)
+// Append /small, /medium, /tiny to the image URL for resized versions.
+// NOTE: the free key is heavily rate-limited (HTTP 429 under burst traffic),
+// so every resolved URL is cached locally (IndexedDB) and shared via Firestore.
+const THESPORTSDB_KEY = '123';
+const THESPORTSDB_SEARCH_URL = `https://www.thesportsdb.com/api/v1/json/${THESPORTSDB_KEY}/searchplayers.php`;
+const THESPORTSDB_THUMB_SUFFIX = '/medium'; // sized version of strThumb/strCutout
 // Admin console for Pronostici: list of Firebase Auth UIDs that can set
 // match results. Replace/add your own uid(s) here.
 const PD_ADMIN_UIDS = [
@@ -152,105 +158,41 @@ const NATION_CODES = {
   'Cile': 'cl'
 };
 
+// Per-card search overrides for TheSportsDB.
+// Most cards resolve via card.subjectName through the fuzzy matcher below.
+// Only players whose name token is ambiguous on TheSportsDB (would match a
+// different player) get an explicit override here. `prefer: 'cutout'` favours
+// the transparent strCutout PNG over the strThumb photo (used for some icons
+// whose thumb is low quality or missing).
 const PLAYER_API_LOOKUP = {
-  star_messi: { search: 'Messi', team: 9568, season: 2025 },
-  star_mbappe: { search: 'Mbappe', team: 541, season: 2025 },
-  star_vinicius: { search: 'Vinicius', team: 541, season: 2025 },
-  star_haaland: { search: 'Haaland', team: 50, season: 2025 },
-  star_bellingham: { search: 'Bellingham', team: 541, season: 2025 },
-  star_yamal: { search: 'Yamal', team: 529, season: 2025 },
-  star_ronaldo: { search: 'Ronaldo', team: 2939, season: 2025 },
-  star_salah: { search: 'Salah', team: 40, season: 2025 },
-  star_kane: { search: 'Kane', team: 157, season: 2025 },
-  star_rodri: { search: 'Rodri', team: 50, season: 2025 },
-  star_pedri: { search: 'Pedri', team: 529, season: 2025 },
-  star_son: { search: 'Son', team: 47, season: 2025 },
-  star_de_bruyne: { search: 'De Bruyne', team: 50, season: 2023 },
-  star_modric: { search: 'Modric', team: 541, season: 2023 },
-  star_musiala: { search: 'Musiala', team: 157, season: 2025 },
-  star_pulisic: { search: 'Pulisic', team: 489, season: 2025 },
-  star_james: { search: 'James Rodriguez', team: 529, season: 2022 },
-  star_nunez: { search: 'Nunez', team: 40, season: 2025 },
-  star_ziyech: { search: 'Ziyech', team: 2938, season: 2024 },
-  star_saka: { search: 'Saka', team: 42, season: 2025 },
-  star_reijnders: { search: 'Reijnders', team: 489, season: 2024 },
-  star_gvardiol: { search: 'Gvardiol', team: 50, season: 2025 },
-  star_felix: { search: 'Felix', team: 529, season: 2024 },
-  star_diaz: { search: 'Luis Diaz', team: 40, season: 2025 },
-  star_mitoma: { search: 'Mitoma', team: 51, season: 2025 },
-  star_isak: { search: 'Isak', team: 34, season: 2025 },
-  star_dembele: { search: 'Dembele', team: 85, season: 2025 },
-  star_neuer: { search: 'Neuer', team: 157, season: 2025 },
-  star_david: { search: 'Jonathan David', team: 79, season: 2024 },
-  star_lookman: { search: 'Lookman', team: 499, season: 2025 },
-  star_raul: { search: 'Raul Jimenez', team: 55, season: 2025 },
-  star_schick: { search: 'Schick', team: 168, season: 2025 },
-  star_shaqiri: { search: 'Shaqiri', team: 1616, season: 2023 },
-  star_tierney: { search: 'Tierney', team: 42, season: 2023 },
-  star_calhanoglu: { search: 'Calhanoglu', team: 505, season: 2025 },
-  star_leckie: { search: 'Leckie', team: 80, season: 2024 },
-  star_al_dawsari: { search: 'Al-Dawsari', team: 7011, season: 2024 },
-  star_akram: { search: 'Afif', team: 3153, season: 2023 },
-  star_posch: { search: 'Posch', team: 500, season: 2024 },
-  star_dzeko: { search: 'Dzeko', team: 611, season: 2023 },
-  star_wood: { search: 'Chris Wood', team: 65, season: 2025 },
-  star_mahrez: { search: 'Mahrez', team: 2929, season: 2024 },
-  star_kakuta: { search: 'Kakuta', team: 96, season: 2023 },
-  star_shomurodov: { search: 'Shomurodov', team: 497, season: 2024 },
-  star_nazon: { search: 'Nazon', team: 85, season: 2022 },
-  star_estupinan: { search: 'Estupinan', team: 51, season: 2025 },
-  star_almiron: { search: 'Almiron', team: 34, season: 2023 },
-  star_sarr: { search: 'Ismaila Sarr', team: 66, season: 2025 },
-  // Icon players: use direct photoId where available to avoid API search failures
-  // photoId = direct API-Sports player ID → URL: https://media.api-sports.io/football/players/{id}.png
-  icon_pele:          { search: 'Pele', photoId: 164082 },
-  icon_maradona:      { search: 'Maradona', photoId: 7930 },
-  icon_zidane:        { search: 'Zidane', team: 541, season: 2006 },
-  icon_ronaldo9:      { search: 'Ronaldo Nazario', photoId: 3334 },
-  icon_cruyff:        { search: 'Cruyff', photoId: 164200 },
-  icon_beckenbauer:   { search: 'Beckenbauer', photoId: 164201 },
-  icon_ronaldinho:    { search: 'Ronaldinho', photoId: 2364 },
-  icon_henry:         { search: 'Henry', photoId: 1454 },
-  icon_figo:          { search: 'Figo', photoId: 1489 },
-  icon_eusebio:       { search: 'Eusebio', photoId: 164202 },
-  icon_shearer:       { search: 'Shearer', photoId: 164203 },
-  icon_gerrard:       { search: 'Gerrard', photoId: 2315 },
-  icon_charlton:      { search: 'Bobby Charlton', photoId: 164204 },
-  icon_roberto_carlos: { search: 'Roberto Carlos', photoId: 2366 },
-  icon_cafu:          { search: 'Cafu', photoId: 2361 },
-  icon_ballack:       { search: 'Ballack', photoId: 2398 },
-  icon_klose:         { search: 'Klose', team: 157, season: 2014 },
-  icon_platini:       { search: 'Platini', photoId: 164205 },
-  icon_cantona:       { search: 'Cantona', photoId: 164206 },
-  icon_vieira:        { search: 'Vieira', photoId: 2319 },
-  icon_seedorf:       { search: 'Seedorf', photoId: 2363 },
-  icon_bergkamp:      { search: 'Bergkamp', photoId: 164207 },
-  icon_davids:        { search: 'Davids', photoId: 164208 },
-  icon_sammer:        { search: 'Sammer', photoId: 164209 },
-  icon_matthaus:      { search: 'Matthaus', photoId: 164210 },
-  icon_suker:         { search: 'Suker', photoId: 164211 },
-  icon_boban:         { search: 'Boban', photoId: 164212 },
-  icon_modric_icon:   { search: 'Modric', team: 541, season: 2018 },
-  icon_valderrama:    { search: 'Valderrama', photoId: 164213 },
-  icon_asprilla:      { search: 'Asprilla', photoId: 164214 },
-  icon_larsson:       { search: 'Larsson', photoId: 164215 },
-  icon_ibrahimovic:   { search: 'Ibrahimovic', team: 489, season: 2021 },
-  icon_weah:          { search: 'Weah', photoId: 164216 },
-  icon_drogba:        { search: 'Drogba', team: 49, season: 2014 },
-  icon_essien:        { search: 'Essien', photoId: 164217 },
-  icon_okocha:        { search: 'Okocha', photoId: 164218 },
-  icon_el_hadary:     { search: 'El-Hadary', team: 7024, season: 2018 },
-  icon_mane_icon:     { search: 'Mane', team: 40, season: 2021 },
-  icon_diop:          { search: 'Papa Diop', photoId: 164219 },
-  icon_hagi:          { search: 'Hagi', photoId: 164220 },
-  icon_nedved:        { search: 'Nedved', photoId: 164221 },
-  icon_scholes:       { search: 'Scholes', photoId: 2320 },
-  icon_kahn:          { search: 'Kahn', photoId: 164222 },
-  icon_nakata:        { search: 'Nakata', photoId: 164223 },
-  icon_ahn:           { search: 'Ahn Jung-hwan', photoId: 164224 },
-  icon_pak_doik:      { search: 'Pak Doo-ik', photoId: 164225 },
-  icon_sanchez:       { search: 'Hugo Sanchez', photoId: 164226 },
-  icon_zamorano:      { search: 'Zamorano', photoId: 164227 }
+  // Ambiguous single-token stars → full name / known DB name
+  star_rodri:         { search: 'Rodrigo Cascante' },
+  star_pedri:         { search: 'Pedro Gonzalez Pedri' },
+  star_son:           { search: 'Son Heung-min' },
+  star_david:         { search: 'Jonathan David' },
+  star_diaz:          { search: 'Luis Diaz' },
+  star_raul:          { search: 'Raul Jimenez' },
+  star_wood:          { search: 'Chris Wood' },
+  star_sarr:          { search: 'Ismaila Sarr' },
+  star_james:         { search: 'James Rodriguez' },
+  // Icons whose short name collides on TheSportsDB
+  icon_pele:          { search: 'Edson Pele' },
+  icon_maradona:      { search: 'Diego Maradona' },
+  icon_zidane:        { search: 'Zinedine Zidane' },
+  icon_ronaldo9:      { search: 'Ronaldo Brazil' },
+  icon_cruyff:        { search: 'Johan Cruyff' },
+  icon_henry:         { search: 'Thierry Henry' },
+  icon_charlton:      { search: 'Bobby Charlton' },
+  icon_roberto_carlos:{ search: 'Roberto Carlos' },
+  icon_diop:          { search: 'Papa Bouba Diop' },
+  // Eusébio (the 1960s legend) is not in TheSportsDB; only a modern namesake
+  // (Eusebio Bancessi) is. Use the legend's full name so the search returns no
+  // false match and the card falls back to its initials rather than a wrong photo.
+  icon_eusebio:       { search: 'Eusebio da Silva Ferreira' },
+  icon_ahn:           { search: 'Ahn Jung-hwan' },
+  icon_pak_doik:      { search: 'Pak Doo-ik' },
+  icon_sanchez:       { search: 'Hugo Sanchez' },
+  icon_maldini_p:     { search: 'Cesare Maldini' }
 };
 
 
@@ -333,7 +275,11 @@ async function getPhotoUrlFromFirestore(cardId) {
   if (!firebaseReady || !db) return null;
   try {
     const doc = await db.collection(FIRESTORE_PHOTOS_COLL).doc(cardId).get();
-    if (doc.exists && doc.data()?.url) return doc.data().url;
+    if (doc.exists) {
+      const url = doc.data()?.url;
+      // Ignore stale legacy api-sports URLs so the card re-fetches from TheSportsDB.
+      if (isValidPhotoUrl(url)) return url;
+    }
     return null;
   } catch (_) {
     return null;
@@ -367,6 +313,17 @@ function getCardInitials(card) {
   return parts.slice(0, 2).map(part => part[0]).join('').slice(0, 3).toUpperCase();
 }
 
+// A photo URL is valid if it's an http(s) URL from a currently-supported
+// image host. We migrated from api-sports.io to TheSportsDB, so any cached
+// api-sports URL is stale (host removed) and must be discarded to force a
+// re-fetch from TheSportsDB.
+function isValidPhotoUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  if (!/^https?:\/\//.test(url)) return false;
+  if (/api-sports\.io/i.test(url)) return false; // legacy host, now dead
+  return true;
+}
+
 function loadPlayerPhotoCache() {
   try {
     const raw = localStorage.getItem(PLAYER_PHOTO_CACHE_KEY);
@@ -377,8 +334,7 @@ function loadPlayerPhotoCache() {
       if (!v) return;
       // Discard old-format blob: URLs – they're invalid after page reload
       const url = v.remoteUrl || v.photo || null;
-      const isValid = url && url.startsWith('http');
-      if (isValid) {
+      if (isValidPhotoUrl(url)) {
         cleaned[k] = {
           photo: url,      // use remote URL immediately for display
           remoteUrl: url,
@@ -403,9 +359,10 @@ function savePlayerPhotoCache() {
     const toSave = {};
     Object.entries(playerPhotoCache).forEach(([k, v]) => {
       if (!v) return;
-      // Only persist remote http URLs – blob: URLs are session-only
+      // Only persist valid remote URLs – blob: URLs are session-only, legacy
+      // api-sports URLs are dead and must not be re-cached.
       const remoteUrl = v.remoteUrl || (v.photo && v.photo.startsWith('http') ? v.photo : null);
-      if (remoteUrl) {
+      if (isValidPhotoUrl(remoteUrl)) {
         toSave[k] = { remoteUrl, updatedAt: v.updatedAt || Date.now() };
       } else if (v.failedAt) {
         toSave[k] = { failedAt: v.failedAt };
@@ -424,15 +381,9 @@ function getPlayerApiMeta(card) {
   if (!search) return null;
   return {
     search,
-    team: configured.team,
-    league: configured.league,
-    season: configured.season || FOOTBALL_API_DEFAULT_SEASON,
-    photoId: configured.photoId || null  // direct player ID for photo URL
+    prefer: configured.prefer || 'thumb',
+    nation: card.nation || null // card.nation is in Italian; mapped to English for TheSportsDB
   };
-}
-
-function getDirectPhotoUrl(photoId) {
-  return photoId ? `https://media.api-sports.io/football/players/${photoId}.png` : '';
 }
 
 function getCachedPlayerPhoto(card) {
@@ -440,81 +391,186 @@ function getCachedPlayerPhoto(card) {
   return cached?.photo || '';
 }
 
-function buildPlayerPhotoUrl(card) {
-  const meta = getPlayerApiMeta(card);
-  if (!meta) return '';
-  // If we have a direct photoId, we can skip the API call
-  if (meta.photoId) return getDirectPhotoUrl(meta.photoId);
-  if (!meta.team && !meta.league) return '';
-  const params = new URLSearchParams({
-    search: meta.search,
-    season: String(meta.season || FOOTBALL_API_DEFAULT_SEASON)
-  });
-  if (meta.team) params.set('team', String(meta.team));
-  else params.set('league', String(meta.league));
-  return `https://${FOOTBALL_API_HOST}/players?${params.toString()}`;
+// TheSportsDB returns nationalities in English (e.g. "Brazil", "Spain").
+// Card.nation is in Italian. Map the nationalities we actually carry.
+const NATION_NAME_EN = {
+  'Argentina': 'Argentina',
+  'Brasile': 'Brazil',
+  'Francia': 'France',
+  'Germania': 'Germany',
+  'Spagna': 'Spain',
+  'Inghilterra': 'England',
+  'Portogallo': 'Portugal',
+  'Paesi Bassi': 'Netherlands',
+  'Belgio': 'Belgium',
+  'Croazia': 'Croatia',
+  'Uruguay': 'Uruguay',
+  'Colombia': 'Colombia',
+  'Marocco': 'Morocco',
+  'USA': 'USA',
+  'Giappone': 'Japan',
+  'Messico': 'Mexico',
+  'Norvegia': 'Norway',
+  'Senegal': 'Senegal',
+  'Turchia': 'Turkey',
+  'Scozia': 'Scotland',
+  'Australia': 'Australia',
+  'Iran': 'Iran',
+  'Corea del Sud': 'South Korea',
+  'Corea del Nord': 'North Korea',
+  'Arabia Saudita': 'Saudi Arabia',
+  'Uzbekistan': 'Uzbekistan',
+  'Iraq': 'Iraq',
+  'Giordania': 'Jordan',
+  'Qatar': 'Qatar',
+  'Algeria': 'Algeria',
+  'Cabo Verde': 'Cape Verde',
+  'Congo DR': 'DR Congo',
+  "Costa d'Avorio": 'Ivory Coast',
+  'Egitto': 'Egypt',
+  'Ghana': 'Ghana',
+  'Sud Africa': 'South Africa',
+  'Tunisia': 'Tunisia',
+  "Curaçao": 'Curacao',
+  'Haiti': 'Haiti',
+  'Panama': 'Panama',
+  'Ecuador': 'Ecuador',
+  'Paraguay': 'Paraguay',
+  'Nuova Zelanda': 'New Zealand',
+  'Austria': 'Austria',
+  'Bosnia ed Erzegovina': 'Bosnia and Herzegovina',
+  'Repubblica Ceca': 'Czech Republic',
+  'Svezia': 'Sweden',
+  'Svizzera': 'Switzerland',
+  'Canada': 'Canada',
+  'Liberia': 'Liberia',
+  'Nigeria': 'Nigeria',
+  'Romania': 'Romania',
+  'Corea del Nord': 'North Korea',
+  'Cile': 'Chile',
+  'Galles': 'Wales',
+  'Irlanda del Nord': 'Northern Ireland',
+  'Irlanda': 'Ireland',
+  'Polonia': 'Poland',
+  'Danimarca': 'Denmark',
+  'Finlandia': 'Finlandia',
+  'Russia': 'Russia',
+  'Ucraina': 'Ukraine',
+  'Serbia': 'Serbia',
+  'Slovacchia': 'Slovakia',
+  'Ungheria': 'Hungary',
+  'Grecia': 'Greece',
+  'Stati Uniti': 'USA'
+};
+
+// Normalize a name for fuzzy comparison: strip accents, punctuation, lowercase.
+function normalizeName(s) {
+  return String(s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')   // drop diacritics
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')    // drop punctuation
+    .toLowerCase()
+    .replace(/\bjunior\b|\bjr\b/g, '')  // ignore "Jr."
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Score how well a TheSportsDB player matches the wanted card.
+// Considers surname overlap, full-name token overlap, and a nationality bonus.
+function scorePlayerMatch(wantedNorm, wantedTokens, dbPlayer, wantedNationEn) {
+  const dbName = normalizeName([dbPlayer.strPlayer, dbPlayer.strFirstname, dbPlayer.strLastname]
+    .filter(Boolean).join(' '));
+  if (!dbName) return -1;
+  const dbTokens = new Set(dbName.split(' ').filter(t => t.length > 1));
+  const dbLast = dbTokens.size ? [...dbTokens].pop() : '';
+
+  let score = 0;
+  // Surname match is the strongest signal. For short wanted surnames (≤5 chars)
+  // require an exact match — otherwise "Rodri" would wrongly match "Rodriguez".
+  const wantedLast = wantedTokens[wantedTokens.length - 1];
+  if (wantedLast && dbLast) {
+    const partial = dbLast.includes(wantedLast) || wantedLast.includes(dbLast);
+    const exact = dbLast === wantedLast;
+    if (wantedLast.length <= 5) { if (exact) score += 3; }
+    else if (partial) score += 3;
+  }
+
+  // Token overlap (each shared meaningful token adds weight)
+  let shared = 0;
+  for (const t of wantedTokens) if (t.length > 2 && dbTokens.has(t)) shared++;
+  score += shared * 2;
+
+  // Containment either way (handles "Rodrigo" vs "Rodri")
+  if (wantedNorm.includes(dbName) || dbName.includes(wantedNorm)) score += 2;
+
+  // Nationality bonus resolves same-name collisions (e.g. two "Rodriguez")
+  if (wantedNationEn && dbPlayer.strNationality) {
+    const dbNat = normalizeName(dbPlayer.strNationality);
+    if (dbNat === normalizeName(wantedNationEn)) score += 2;
+  }
+  return score;
+}
+
+// Append the resize suffix to a TheSportsDB image URL (works on strThumb & strCutout).
+function sizedThumbUrl(rawUrl) {
+  if (!rawUrl) return '';
+  return rawUrl + THESPORTSDB_THUMB_SUFFIX;
 }
 
 async function fetchPlayerPhoto(card) {
   const meta = getPlayerApiMeta(card);
   if (!meta) return '';
+  if (!navigator.onLine) return '';
 
-  // Fast path: if we have a direct photoId, use it directly without API call
-  if (meta.photoId) {
-    const directUrl = getDirectPhotoUrl(meta.photoId);
-    // Verify the image is reachable with a lightweight HEAD request
-    try {
-      if (!navigator.onLine) return directUrl; // trust the URL even offline
-      const check = await fetch(directUrl, { method: 'HEAD' });
-      if (check.ok) return directUrl;
-    } catch (_) {
-      return directUrl; // return anyway; browser will show broken image or fallback will catch
-    }
-    return directUrl;
+  const wantedNorm = normalizeName(meta.search);
+  const wantedTokens = wantedNorm.split(' ').filter(t => t.length > 1);
+  if (!wantedTokens.length) return '';
+  const wantedNationEn = meta.nation ? (NATION_NAME_EN[meta.nation] || null) : null;
+
+  // TheSportsDB searchplayers.php does a fuzzy substring match on the player name.
+  // Try the configured/full name first, then the last token (surname) as a wider net.
+  const queries = [meta.search];
+  const lastToken = meta.search.split(/\s+/).pop();
+  if (lastToken && lastToken.length > 2 && lastToken.toLowerCase() !== meta.search.toLowerCase()) {
+    queries.push(lastToken);
   }
 
-  if (!meta.team && !meta.league) return '';
-
-  const tryFetch = async (season) => {
-    const params = new URLSearchParams({ search: meta.search, season: String(season) });
-    if (meta.team) params.set('team', String(meta.team));
-    else params.set('league', String(meta.league));
-    const url = `https://${FOOTBALL_API_HOST}/players?${params.toString()}`;
-    if (!navigator.onLine) return '';
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'x-rapidapi-host': FOOTBALL_API_HOST,
-        'x-rapidapi-key': FOOTBALL_API_KEY
+  for (const q of queries) {
+    let data;
+    try {
+      const url = `${THESPORTSDB_SEARCH_URL}?p=${encodeURIComponent(q)}`;
+      const res = await fetch(url);
+      if (res.status === 429) {
+        // Free key is rate-limited: bail out and let the cache/failedAt logic cool down.
+        console.warn('TheSportsDB rate-limited (429) — deferring photo fetch');
+        return '';
       }
-    });
-    if (!response.ok) throw new Error(`photo-api-${response.status}`);
-    const data = await response.json();
-    if (!data?.response?.length) return '';
-    const player = data.response[0]?.player;
-    if (!player?.photo) return '';
-    // Validate: at least one meaningful search word must appear in the player name
-    const searchWords = meta.search.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-    const playerNameLower = [player.name, player.firstname, player.lastname]
-      .filter(Boolean).join(' ').toLowerCase();
-    const nameMatch = searchWords.some(w => playerNameLower.includes(w));
-    if (!nameMatch) {
-      console.warn(`Photo name mismatch: wanted "${meta.search}", got "${player.name}"`);
+      if (!res.ok) return '';
+      data = await res.json();
+    } catch (err) {
+      console.warn('TheSportsDB fetch error:', err);
       return '';
     }
-    return player.photo;
-  };
 
-  // Try configured season first
-  const photo = await tryFetch(meta.season || FOOTBALL_API_DEFAULT_SEASON);
-  if (photo) return photo;
+    const players = Array.isArray(data?.player) ? data.player : [];
+    if (!players.length) continue;
 
-  // If no photo found and we used an old season, try FOOTBALL_API_DEFAULT_SEASON as fallback
-  if (meta.season && meta.season !== FOOTBALL_API_DEFAULT_SEASON) {
-    try {
-      const fallback = await tryFetch(FOOTBALL_API_DEFAULT_SEASON);
-      if (fallback) return fallback;
-    } catch (_) {}
+    // Pick the best-matching player, then choose its image field.
+    let best = null, bestScore = 0;
+    for (const p of players) {
+      const score = scorePlayerMatch(wantedNorm, wantedTokens, p, wantedNationEn);
+      if (score > bestScore) { bestScore = score; best = p; }
+    }
+
+    if (best && bestScore >= 3) {
+      // Prefer strThumb (full photo); fall back to strCutout (transparent PNG).
+      const raw = meta.prefer === 'cutout'
+        ? (best.strCutout || best.strThumb)
+        : (best.strThumb || best.strCutout);
+      if (raw) return sizedThumbUrl(raw);
+    } else if (bestScore > 0 && bestScore < 3) {
+      console.warn(`Photo name mismatch (score ${bestScore}): wanted "${meta.search}", best "${best?.strPlayer}"`);
+    }
   }
 
   return '';
@@ -587,7 +643,11 @@ function queuePlayerPhoto(card) {
               refreshPlayerPhotoMarks(card.id);
             }
           }
-        } catch (_) { /* Keep using remote URL already shown */ }
+        } catch (_) {
+          // CORS-blocked (TheSportsDB images): warm the SW cache so the remote
+          // URL still resolves offline. The remote URL remains the active photo.
+          fetch(cached.remoteUrl, { mode: 'no-cors' }).catch(() => {});
+        }
         playerPhotoInFlight.delete(card.id);
         return;
       }
@@ -622,7 +682,12 @@ function queuePlayerPhoto(card) {
         savePlayerPhotoCache();
         refreshPlayerPhotoMarks(card.id);
 
-        // Download blob in background for future offline use
+        // Download blob in background for future offline use.
+        // NOTE: TheSportsDB's image CDN (r2.thesportsdb.com) sends no CORS
+        // headers, so a cross-origin fetch with mode:'cors' is rejected and the
+        // blob can't be stored in IDB. We attempt it anyway (works for any
+        // CORS-enabled host), and on failure fall back to no-cors just to warm
+        // the Service Worker's cache-first store so the image survives offline.
         try {
           const res = await fetch(photoUrl, { mode: 'cors' });
           if (res.ok) {
@@ -639,7 +704,12 @@ function queuePlayerPhoto(card) {
               // No need to call refreshPlayerPhotoMarks again: remote URL already rendering fine
             }
           }
-        } catch (_) {}
+        } catch (_) {
+          // CORS-blocked (TheSportsDB images): warm the SW cache instead so the
+          // photo still loads when offline. Opaque response isn't readable as a
+          // blob, but the cache-first SW strategy will serve it next time.
+          fetch(photoUrl, { mode: 'no-cors' }).catch(() => {});
+        }
       } else {
         playerPhotoCache[card.id] = { failedAt: Date.now() };
         savePlayerPhotoCache();
@@ -1652,23 +1722,26 @@ function startTimerIfNeeded() {
 }
 
 function rollRarity(packType) {
+  // Legendary odds sit at ~1% in every pack, with the other tiers scaling down
+  // from it. Lower-tier packs (nations) keep commons as the bulk; the legends
+  // pack drops commons entirely (every pull is at least rare).
   const rand = Math.random() * 100;
   if (packType === 'nations') {
-    if (rand < 1) return 'legendary';
-    if (rand < 10) return 'epic';
-    if (rand < 40) return 'rare';
-    return 'common';
+    if (rand < 1)  return 'legendary'; //  1%
+    if (rand < 7)  return 'epic';      //  6%
+    if (rand < 30) return 'rare';      // 23%
+    return 'common';                   // 70%
   }
   if (packType === 'stars') {
-    if (rand < 3) return 'legendary';
-    if (rand < 15) return 'epic';
-    if (rand < 45) return 'rare';
-    return 'common';
+    if (rand < 1)  return 'legendary'; //  1%
+    if (rand < 8)  return 'epic';      //  7%
+    if (rand < 30) return 'rare';      // 22%
+    return 'common';                   // 70%
   }
   if (packType === 'legends') {
-    if (rand < 12) return 'legendary';
-    if (rand < 50) return 'epic';
-    return 'rare';
+    if (rand < 1)  return 'legendary'; //  1%
+    if (rand < 10) return 'epic';      //  9%
+    return 'rare';                     // 90% (no commons)
   }
   return 'common';
 }
