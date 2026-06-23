@@ -74,7 +74,7 @@ const FOOTBALL_API_DEFAULT_SEASON = 2025;
 // Admin console for Pronostici: list of Firebase Auth UIDs that can set
 // match results. Replace/add your own uid(s) here.
 const PD_ADMIN_UIDS = [
-  'ZTCTToeJKUSo7AAtARvMRi2TLQ83'
+  'REPLACE_WITH_YOUR_AUTH_UID'
 ];
 const PREDICTION_REWARD = 10;        // bonus packs for a correct score
 const PREDICTION_LOCK_SECONDS = 60;  // lock predictions this many seconds before kickoff
@@ -775,6 +775,8 @@ if (firebaseReady && auth) {
     } else {
       if (userListenerUnsubscribe) { userListenerUnsubscribe(); userListenerUnsubscribe = null; }
       if (collectionListenerUnsubscribe) { collectionListenerUnsubscribe(); collectionListenerUnsubscribe = null; }
+      stopIncomingRequestsListener();
+      incomingRequests = [];
       currentUser = null;
       userData = null;
       userCollection = {};
@@ -924,6 +926,17 @@ async function initApp() {
 
   showMainApp();
   syncPendingPackOperations().catch(err => console.warn('Pending pack sync skipped:', err));
+
+  // Friend system: listen for incoming requests + reconcile accepted friendships.
+  startIncomingRequestsListener();
+  syncAcceptedFriendships().catch(err => console.warn('Friendship sync skipped:', err));
+
+  // Challenges: reset repeatable daily challenges if the day rolled over,
+  // then reconcile pending invitations (referrals).
+  checkDailyChallengeReset().then(() => {
+    processPendingReferrals().catch(err => console.warn('Referral sync skipped:', err));
+  });
+  scheduleMidnightReset();
 }
 
 function withTimeout(promise, ms) {
@@ -1207,7 +1220,11 @@ function setupOnboardingHandlers() {
         friendRequests: [],
         sentRequests: [],
         completedChallenges: [],
+        challengeCompletions: {},
         inviteCount: 0,
+        invitedToday: 0,
+        sharedToday: 0,
+        sentRequestToday: 0,
         totalPacksOpened: 0,
         loginStreak: 1,
         lastLoginDate: new Date().toDateString(),
@@ -1508,7 +1525,7 @@ function updateHeaderUI() {
 }
 
 function updateRequestBadge() {
-  const count = userData?.friendRequests?.length || 0;
+  const count = incomingRequests.length || userData?.friendRequests?.length || 0;
   const tab = $('header-profile-btn');
   let badge = tab.querySelector('.nav-badge');
   if (count > 0) {
@@ -2978,7 +2995,10 @@ async function renderFriendRequests() {
   const list = $('requests-list');
   if (!section || !list) return;
 
-  const requests = userData?.friendRequests || [];
+  // Prefer the realtime incoming list; fall back to userData.friendRequests.
+  const requests = (incomingRequests && incomingRequests.length)
+    ? incomingRequests.map(r => r.from)
+    : (userData?.friendRequests || []);
 
   if (requests.length === 0) {
     section.style.display = 'none';
@@ -2991,7 +3011,6 @@ async function renderFriendRequests() {
     return;
   }
 
-  list.innerHTML = '<div class="empty-state"><p>Caricamento...</p></div>';
   let profiles;
   try {
     profiles = await fetchUserProfiles(requests);
@@ -3203,69 +3222,74 @@ async function sendFriendRequest(targetUid) {
   const theirRef = db.collection('pd_users').doc(targetUid);
   const requestRef = db.collection('pd_friend_requests').doc(getFriendshipId(currentUser.uid, targetUid));
 
-  const result = await db.runTransaction(async transaction => {
-    // IMPORTANT: ALL reads must happen before any writes in a Firestore transaction
-    const [mySnap, theirSnap, requestSnap] = await Promise.all([
-      transaction.get(myRef),
-      transaction.get(theirRef),
-      transaction.get(requestRef)
-    ]);
-    const myData = mySnap.exists ? mySnap.data() : {};
-    if ((myData.friends || []).includes(targetUid)) return { status: 'accepted' };
+  try {
+    const result = await db.runTransaction(async transaction => {
+      const [mySnap, theirSnap, requestSnap] = await Promise.all([
+        transaction.get(myRef),
+        transaction.get(theirRef),
+        transaction.get(requestRef)
+      ]);
+      const myData = mySnap.exists ? mySnap.data() : {};
+      if ((myData.friends || []).includes(targetUid)) return { status: 'accepted' };
 
-    if (requestSnap.exists) {
-      const request = requestSnap.data();
-      if (request.status === 'accepted') return { status: 'accepted' };
-      if (request.status === 'pending') {
-        if (request.to === currentUser.uid && request.from === targetUid) {
-          // They sent us a request first — auto-accept
-          transaction.update(requestRef, {
-            status: 'accepted',
-            acceptedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-          transaction.update(myRef, {
-            friends: firebase.firestore.FieldValue.arrayUnion(targetUid),
-            friendRequests: firebase.firestore.FieldValue.arrayRemove(targetUid)
-          });
-          transaction.update(theirRef, {
-            friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
-            sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
-          });
-          return { status: 'accepted' };
+      if (requestSnap.exists) {
+        const request = requestSnap.data();
+        if (request.status === 'accepted') return { status: 'accepted' };
+        if (request.status === 'pending') {
+          if (request.to === currentUser.uid && request.from === targetUid) {
+            // They sent us a request first — auto-accept.
+            transaction.update(requestRef, {
+              status: 'accepted',
+              acceptedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            // Each user updates ONLY their own doc.
+            transaction.update(myRef, {
+              friends: firebase.firestore.FieldValue.arrayUnion(targetUid),
+              sentRequests: firebase.firestore.FieldValue.arrayRemove(targetUid)
+            });
+            return { status: 'accepted' };
+          }
+          return { status: 'pending' };
         }
-        return { status: 'pending' };
       }
+
+      // Create a fresh pending request. Only the sender's own doc is touched.
+      transaction.set(requestRef, {
+        from: currentUser.uid,
+        fromUsername: userData?.username || '',
+        to: targetUid,
+        toUsername: theirSnap.exists ? (theirSnap.data().username || '') : '',
+        status: 'pending',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      transaction.update(myRef, {
+        sentRequests: firebase.firestore.FieldValue.arrayUnion(targetUid)
+      });
+      return { status: 'created' };
+    });
+
+    if (result.status === 'accepted') {
+      addUniqueLocal('friends', targetUid);
+      removeLocal('sentRequests', targetUid);
+      showToast('Amicizia accettata.');
+    } else if (result.status === 'pending') {
+      addUniqueLocal('sentRequests', targetUid);
+      showToast('Richiesta già inviata.');
+    } else if (result.status === 'created') {
+      addUniqueLocal('sentRequests', targetUid);
+      showToast('✓ Richiesta inviata.');
+      await incrementSentRequestCount();
     }
-
-    transaction.set(requestRef, {
-      from: currentUser.uid,
-      fromUsername: userData?.username || '',
-      to: targetUid,
-      toUsername: theirSnap.exists ? (theirSnap.data().username || '') : '',
-      status: 'pending',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    transaction.update(myRef, { sentRequests: firebase.firestore.FieldValue.arrayUnion(targetUid) });
-    transaction.update(theirRef, { friendRequests: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) });
-    return { status: 'created' };
-  });
-
-  if (result.status === 'accepted') {
-    addUniqueLocal('friends', targetUid);
-    removeLocal('friendRequests', targetUid);
-    removeLocal('sentRequests', targetUid);
-    showToast('Amicizia accettata.');
-  } else if (result.status === 'pending') {
-    addUniqueLocal('sentRequests', targetUid);
-    showToast('Richiesta già inviata.');
-  } else if (result.status === 'created') {
-    addUniqueLocal('sentRequests', targetUid);
-    showToast('Richiesta inviata.');
+    saveLocalSession();
+    checkAllChallenges();
+    return result;
+  } catch (err) {
+    console.error('sendFriendRequest error:', err);
+    showToast('Errore nell\'invio della richiesta. Riprova.');
+    return { status: 'error' };
   }
-  saveLocalSession();
-  return result;
 }
 
 async function acceptFriendRequest(fromUid) {
@@ -3274,70 +3298,67 @@ async function acceptFriendRequest(fromUid) {
     return;
   }
   const myRef = db.collection('pd_users').doc(currentUser.uid);
-  const theirRef = db.collection('pd_users').doc(fromUid);
   const requestRef = db.collection('pd_friend_requests').doc(getFriendshipId(currentUser.uid, fromUid));
 
-  await db.runTransaction(async transaction => {
-    // Read ALL documents first before any writes
-    const [requestSnap, theirSnap] = await Promise.all([
-      transaction.get(requestRef),
-      transaction.get(theirRef)
-    ]);
+  try {
+    await db.runTransaction(async transaction => {
+      const [requestSnap] = await Promise.all([
+        transaction.get(requestRef)
+      ]);
 
-    if (requestSnap.exists) {
-      const request = requestSnap.data();
-      if (request.status === 'pending' && request.to !== currentUser.uid) {
-        throw new Error('Richiesta non valida.');
-      }
-      if (request.status !== 'accepted') {
-        transaction.update(requestRef, {
+      if (requestSnap.exists) {
+        const request = requestSnap.data();
+        if (request.status === 'pending' && request.to !== currentUser.uid) {
+          throw new Error('Richiesta non valida.');
+        }
+        if (request.status !== 'accepted') {
+          transaction.update(requestRef, {
+            status: 'accepted',
+            acceptedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+      } else {
+        transaction.set(requestRef, {
+          from: fromUid,
+          to: currentUser.uid,
           status: 'accepted',
           acceptedAt: firebase.firestore.FieldValue.serverTimestamp(),
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
       }
-    } else {
-      transaction.set(requestRef, {
-        from: fromUid,
-        to: currentUser.uid,
-        status: 'accepted',
-        acceptedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+
+      // Each user writes ONLY their own friends array.
+      transaction.update(myRef, {
+        friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
+        sentRequests: firebase.firestore.FieldValue.arrayRemove(fromUid)
       });
-    }
-
-    transaction.update(myRef, {
-      friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
-      friendRequests: firebase.firestore.FieldValue.arrayRemove(fromUid)
     });
-    transaction.update(theirRef, {
-      friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
-      sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
-    });
-  });
 
-  addUniqueLocal('friends', fromUid);
-  removeLocal('friendRequests', fromUid);
-  removeLocal('sentRequests', fromUid);
-  saveLocalSession();
-  showToast('Amicizia accettata.');
+    addUniqueLocal('friends', fromUid);
+    removeLocal('sentRequests', fromUid);
+    saveLocalSession();
+    showToast('✓ Amicizia accettata.');
+    await syncAcceptedFriendships();
+    checkAllChallenges();
+  } catch (err) {
+    console.error('acceptFriendRequest error:', err);
+    showToast('Errore nell\'accettazione. Riprova.');
+    throw err;
+  }
 }
 
 async function rejectFriendRequest(fromUid) {
   if (!isOnlineApp()) return;
-  const myRef = db.collection('pd_users').doc(currentUser.uid);
-  const theirRef = db.collection('pd_users').doc(fromUid);
   const requestRef = db.collection('pd_friend_requests').doc(getFriendshipId(currentUser.uid, fromUid));
 
-  const batch = db.batch();
-  batch.update(myRef, { friendRequests: firebase.firestore.FieldValue.arrayRemove(fromUid) });
-  batch.update(theirRef, { sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) });
-  batch.delete(requestRef);
-  await batch.commit();
-
-  removeLocal('friendRequests', fromUid);
-  saveLocalSession();
-  showToast('Richiesta rifiutata.');
+  try {
+    await requestRef.delete();
+    showToast('Richiesta rifiutata.');
+  } catch (err) {
+    console.error('rejectFriendRequest error:', err);
+    showToast('Errore. Riprova.');
+  }
 }
 
 async function removeFriend(friendUid) {
@@ -3345,23 +3366,150 @@ async function removeFriend(friendUid) {
     showToast('Accedi online per modificare gli amici.');
     return;
   }
-  const batch = db.batch();
   const myRef = db.collection('pd_users').doc(currentUser.uid);
-  const theirRef = db.collection('pd_users').doc(friendUid);
   const requestRef = db.collection('pd_friend_requests').doc(getFriendshipId(currentUser.uid, friendUid));
 
-  batch.update(myRef, { friends: firebase.firestore.FieldValue.arrayRemove(friendUid) });
-  batch.update(theirRef, { friends: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) });
-  batch.set(requestRef, {
-    status: 'removed',
-    removedBy: currentUser.uid,
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-  }, { merge: true });
-  await batch.commit();
+  try {
+    const batch = db.batch();
+    batch.update(myRef, {
+      friends: firebase.firestore.FieldValue.arrayRemove(friendUid),
+      sentRequests: firebase.firestore.FieldValue.arrayRemove(friendUid)
+    });
+    batch.set(requestRef, {
+      status: 'removed',
+      removedBy: currentUser.uid,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    await batch.commit();
 
-  removeLocal('friends', friendUid);
-  saveLocalSession();
-  showToast('Amico rimosso.');
+    removeLocal('friends', friendUid);
+    saveLocalSession();
+    showToast('Amico rimosso.');
+  } catch (err) {
+    console.error('removeFriend error:', err);
+    showToast('Errore nella rimozione. Riprova.');
+  }
+}
+
+// Incoming friend requests discovered via realtime query on pd_friend_requests
+// (where to == me). This replaces the old cross-user array write, which was
+// silently denied by Firestore rules.
+let incomingRequests = [];          // array of { id, from, fromUsername, status }
+let incomingRequestsListenerUnsubscribe = null;
+
+// Starts listening for pending friend requests addressed to the current user.
+// Realtime: as soon as someone sends a request, it shows up in the Amici tab
+// and the profile badge updates.
+function startIncomingRequestsListener() {
+  if (!isOnlineApp()) return;
+  stopIncomingRequestsListener();
+  try {
+    // Incoming PENDING requests (where to == me): drive the badge + the
+    // "Richieste in arrivo" list.
+    const q = db.collection('pd_friend_requests')
+      .where('to', '==', currentUser.uid)
+      .where('status', '==', 'pending');
+    incomingRequestsListenerUnsubscribe = q.onSnapshot(snap => {
+      incomingRequests = snap.docs.map(d => {
+        const data = d.data();
+        return { id: d.id, from: data.from, fromUsername: data.fromUsername || '', status: data.status };
+      });
+      // Keep userData.friendRequests in sync so the "Accetta richiesta" label
+      // in searchUser() and the badge stay correct.
+      userData.friendRequests = incomingRequests.map(r => r.from);
+      saveLocalSession();
+      updateRequestBadge();
+      const panel = $('profile-panel');
+      if (panel && panel.classList.contains('active')) {
+        renderFriendRequests();
+      }
+    }, err => {
+      console.warn('Incoming requests listener error:', err);
+    });
+
+    // Outgoing ACCEPTED requests (where from == me): when the other party
+    // accepts, we discover it in realtime and add them to our friends list
+    // without needing any cross-user write.
+    const qOut = db.collection('pd_friend_requests')
+      .where('from', '==', currentUser.uid)
+      .where('status', '==', 'accepted');
+    qOut.onSnapshot(snap => {
+      const current = new Set(userData.friends || []);
+      const toAdd = [];
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.to && !current.has(data.to)) toAdd.push(data.to);
+      });
+      if (toAdd.length) {
+        db.collection('pd_users').doc(currentUser.uid).update({
+          friends: firebase.firestore.FieldValue.arrayUnion(...toAdd)
+        }).then(() => {
+          toAdd.forEach(uid => addUniqueLocal('friends', uid));
+          saveLocalSession();
+          renderFriendsList();
+          checkAllChallenges();
+        }).catch(err => console.warn('Outgoing-accepted reconcile error:', err));
+      }
+    }, err => {
+      console.warn('Outgoing requests listener error:', err);
+    });
+  } catch (err) {
+    console.warn('Could not start incoming requests listener:', err);
+  }
+}
+
+function stopIncomingRequestsListener() {
+  if (incomingRequestsListenerUnsubscribe) {
+    try { incomingRequestsListenerUnsubscribe(); } catch (e) {}
+    incomingRequestsListenerUnsubscribe = null;
+  }
+}
+
+// Reconcile the local friends list with accepted request docs, so that when
+// the other party accepts, this client picks up the friendship without needing
+// a cross-user write. Called on login and after accepting.
+async function syncAcceptedFriendships() {
+  if (!isOnlineApp()) return;
+  try {
+    const q1 = db.collection('pd_friend_requests').where('to', '==', currentUser.uid);
+    const q2 = db.collection('pd_friend_requests').where('from', '==', currentUser.uid);
+    const [s1, s2] = await Promise.all([q1.get(), q2.get()]);
+    const accepted = new Set();
+    [...s1.docs, ...s2.docs].forEach(d => {
+      const data = d.data();
+      if (data.status === 'accepted') {
+        const other = data.from === currentUser.uid ? data.to : data.from;
+        if (other) accepted.add(other);
+      }
+    });
+    if (!accepted.size) return;
+    const current = new Set(userData.friends || []);
+    const toAdd = [...accepted].filter(uid => !current.has(uid));
+    if (toAdd.length) {
+      await db.collection('pd_users').doc(currentUser.uid).update({
+        friends: firebase.firestore.FieldValue.arrayUnion(...toAdd)
+      });
+      toAdd.forEach(uid => addUniqueLocal('friends', uid));
+      saveLocalSession();
+      renderFriendsList();
+    }
+  } catch (err) {
+    console.warn('syncAcceptedFriendships error:', err);
+  }
+}
+
+// Increment the "Invia 2 richieste" daily challenge counter.
+async function incrementSentRequestCount() {
+  if (!isOnlineApp()) return;
+  try {
+    await db.collection('pd_users').doc(currentUser.uid).update({
+      sentRequestToday: firebase.firestore.FieldValue.increment(1)
+    });
+    userData.sentRequestToday = (userData.sentRequestToday || 0) + 1;
+    saveLocalSession();
+  } catch (err) {
+    console.warn('incrementSentRequestCount error:', err);
+  }
 }
 
 async function shareInvite() {
@@ -3375,14 +3523,21 @@ async function shareInvite() {
       await navigator.clipboard.writeText(text);
       showToast('Link copiato.');
     }
-    // Track share for challenges
+    // Track share for challenges. sharedToday feeds the daily "Condividi"
+    // challenge; inviteCount stays cumulative for referral tracking.
     if (isOnlineApp()) {
-      await db.collection('pd_users').doc(currentUser.uid).update({
-        inviteCount: firebase.firestore.FieldValue.increment(1)
-      });
-      userData.inviteCount = (userData.inviteCount || 0) + 1;
-      checkAllChallenges();
-      saveLocalSession();
+      try {
+        await db.collection('pd_users').doc(currentUser.uid).update({
+          inviteCount: firebase.firestore.FieldValue.increment(1),
+          sharedToday: firebase.firestore.FieldValue.increment(1)
+        });
+        userData.inviteCount = (userData.inviteCount || 0) + 1;
+        userData.sharedToday = (userData.sharedToday || 0) + 1;
+        saveLocalSession();
+        await checkAllChallenges();
+      } catch (err) {
+        console.warn('Share track error:', err);
+      }
     }
   } catch (err) {
     if (err.name !== 'AbortError') console.error('Share error:', err);
@@ -3395,19 +3550,51 @@ function handleReferral() {
   const refUid = params.get('ref');
   if (!refUid || refUid === currentUser.uid) return;
 
-  // Check if already counted
+  // Check if already counted (per-referrer, on this device)
   const counted = localStorage.getItem(`ref_counted_${refUid}`);
   if (counted) return;
 
-  // Increment referrer's invite count
-  db.collection('pd_users').doc(refUid).update({
-    inviteCount: firebase.firestore.FieldValue.increment(1)
+  // The invitee writes a referral doc in their OWN namespace (create-only rule
+  // below). The referrer reconciles inviteCount/invitedToday on next login via
+  // processPendingReferrals(). This avoids any cross-user write.
+  db.collection('pd_referrals').doc(`${refUid}_${currentUser.uid}`).set({
+    referrer: refUid,
+    invitee: currentUser.uid,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
   }).then(() => {
     localStorage.setItem(`ref_counted_${refUid}`, '1');
-  }).catch(() => {});
+  }).catch(err => {
+    console.warn('Referral write error:', err);
+  });
 
   // Clean URL
   window.history.replaceState({}, '', window.location.pathname);
+}
+
+// Reconcile pending referrals addressed to the current user: count them and
+// bump inviteCount (+ invitedToday, for the daily "Invita 5 amici" challenge).
+// Each counted referral is then deleted so it isn't double-counted.
+async function processPendingReferrals() {
+  if (!isOnlineApp()) return;
+  try {
+    const snap = await db.collection('pd_referrals').where('referrer', '==', currentUser.uid).get();
+    if (snap.empty) return;
+    const batch = db.batch();
+    snap.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+
+    const count = snap.size;
+    await db.collection('pd_users').doc(currentUser.uid).update({
+      inviteCount: firebase.firestore.FieldValue.increment(count),
+      invitedToday: firebase.firestore.FieldValue.increment(count)
+    });
+    userData.inviteCount = (userData.inviteCount || 0) + count;
+    userData.invitedToday = (userData.invitedToday || 0) + count;
+    saveLocalSession();
+    checkAllChallenges();
+  } catch (err) {
+    console.warn('processPendingReferrals error:', err);
+  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -3415,17 +3602,47 @@ function handleReferral() {
 // ════════════════════════════════════════════════════════════
 
 const CHALLENGES = [
-  { id:'invite5',       title:'Invita 5 amici',       icon:'mail',     target:5,  field:'inviteCount',                            reward:3 },
-  { id:'friends2',      title:'Invia 2 richieste',    icon:'users',    target:2,  field:'sentRequests',       isArray:true,       reward:1 },
-  { id:'open10',        title:'Apri 10 pacchetti',    icon:'package',  target:10, field:'totalPacksOpened',                       reward:2 },
-  { id:'open50',        title:'Collezionista Serio',  icon:'medal',    target:50, field:'totalPacksOpened',                       reward:5 },
-  { id:'rare5',         title:'Cacciatore di Rare',   icon:'gem',      target:5,  check:'rareCount',                              reward:2 },
-  { id:'epic1',         title:'Prima Epica',          icon:'zap',      target:1,  check:'epicCount',                              reward:2 },
-  { id:'legendary1',    title:'Leggenda!',            icon:'star',     target:1,  check:'legendaryCount',                         reward:3 },
-  { id:'login7',        title:'Costante',             icon:'calendar', target:7,  field:'loginStreak',                            reward:5 },
-  { id:'complete_team', title:'Nazione Completa',     icon:'trophy',   target:1,  check:'completeNation',                         reward:3 },
-  { id:'share1',        title:'Condividi',            icon:'share',    target:1,  field:'inviteCount',                            reward:1 },
+  // ── Repeatable (reset at local midnight ONLY if already completed) ──
+  { id:'share1',        title:'Condividi',            icon:'share',    target:1,  field:'sharedToday',         repeatable:true,  reward:1 },
+  { id:'invite5',       title:'Invita 5 amici',       icon:'mail',     target:5,  field:'invitedToday',        repeatable:true,  reward:3 },
+  { id:'friends2',      title:'Invia 2 richieste',    icon:'users',    target:2,  field:'sentRequestToday',    repeatable:true,  reward:1 },
+  // ── Permanent milestones ──
+  { id:'open10',        title:'Apri 10 pacchetti',    icon:'package',  target:10, field:'totalPacksOpened',                        reward:2 },
+  { id:'open50',        title:'Collezionista Serio',  icon:'medal',    target:50, field:'totalPacksOpened',                        reward:5 },
+  { id:'open100',       title:'Apri 100 pacchetti',   icon:'package',  target:100,field:'totalPacksOpened',                        reward:8 },
+  { id:'open250',       title:'Macchina da Pacchi',   icon:'package',  target:250,field:'totalPacksOpened',                        reward:15 },
+  { id:'rare5',         title:'Cacciatore di Rare',   icon:'gem',      target:5,  check:'rareCount',                               reward:2 },
+  { id:'rare15',        title:'Collezionista di Rare',icon:'gem',      target:15, check:'rareCount',                               reward:4 },
+  { id:'epic1',         title:'Prima Epica',          icon:'zap',      target:1,  check:'epicCount',                               reward:2 },
+  { id:'epic5',         title:'Collezionista di Epiche',icon:'zap',    target:5,  check:'epicCount',                               reward:5 },
+  { id:'legendary1',    title:'Leggenda!',            icon:'star',     target:1,  check:'legendaryCount',                          reward:3 },
+  { id:'legendary3',    title:'Cacciatore di Leggende',icon:'star',    target:3,  check:'legendaryCount',                          reward:6 },
+  { id:'login7',        title:'Costante',             icon:'calendar', target:7,  field:'loginStreak',                             reward:5 },
+  { id:'login14',       title:'Fedele al Mondiale',   icon:'calendar', target:14, field:'loginStreak',                             reward:10 },
+  { id:'complete_team', title:'Nazione Completa',     icon:'trophy',   target:1,  check:'completeNation',                          reward:3 },
+  { id:'complete3',     title:'3 Nazioni Complete',   icon:'trophy',   target:3,  check:'completeNationsCount',                    reward:8 },
+  { id:'first_friend',  title:'Prima Amicizia',       icon:'users',    target:1,  field:'friends',  isArray:true,                 reward:1 },
 ];
+
+// Returns today's date string (local midnight boundaries), matching the
+// existing lastLoginDate mechanism used for daily packs.
+function challengeTodayKey() {
+  return new Date().toDateString();
+}
+
+// Did a repeatable challenge already get completed today? Stored on the user
+// doc as challengeCompletions: { [id]: 'Mon Jun 23 2026' }.
+function isChallengeCompletedToday(ch) {
+  if (!ch.repeatable) return false;
+  const completions = userData?.challengeCompletions || {};
+  return completions[ch.id] === challengeTodayKey();
+}
+
+function isChallengeCompleted(ch) {
+  const completed = userData?.completedChallenges || [];
+  if (completed.includes(ch.id)) return true;
+  return isChallengeCompletedToday(ch);
+}
 
 function getChallengeProgress(challenge) {
   if (challenge.field) {
@@ -3452,33 +3669,41 @@ function getChallengeProgress(challenge) {
     }).length;
   }
   if (challenge.check === 'completeNation') {
-    // Check if any nation has all 3 cards (team + star + legend)
-    const nations = {};
-    ALL_CARDS.forEach(c => {
-      if (!nations[c.nation]) nations[c.nation] = { total: 0, owned: 0 };
-      nations[c.nation].total++;
-      if (userCollection[c.id]) nations[c.nation].owned++;
-    });
+    const nations = buildNationStats();
     return Object.values(nations).some(n => n.total >= 3 && n.owned >= n.total) ? 1 : 0;
   }
+  if (challenge.check === 'completeNationsCount') {
+    const nations = buildNationStats();
+    return Object.values(nations).filter(n => n.total >= 3 && n.owned >= n.total).length;
+  }
   return 0;
+}
+
+function buildNationStats() {
+  const nations = {};
+  ALL_CARDS.forEach(c => {
+    if (!nations[c.nation]) nations[c.nation] = { total: 0, owned: 0 };
+    nations[c.nation].total++;
+    if (userCollection[c.id]) nations[c.nation].owned++;
+  });
+  return nations;
 }
 
 function renderChallenges() {
   const container = $('challenges-container');
   container.innerHTML = '';
-  const completed = userData?.completedChallenges || [];
 
   CHALLENGES.forEach(ch => {
-    const isCompleted = completed.includes(ch.id);
+    const isCompleted = isChallengeCompleted(ch);
     const progress = getChallengeProgress(ch);
     const pct = Math.min(100, Math.round((progress / ch.target) * 100));
+    const repeatable = ch.repeatable ? ' <span class="challenge-repeat">↻</span>' : '';
 
     const card = document.createElement('div');
     card.className = `challenge-card ${isCompleted ? 'completed' : ''}`;
     card.innerHTML = `
       <span class="challenge-icon">${svgIcon(ch.icon)}</span>
-      <span class="challenge-title">${ch.title}</span>
+      <span class="challenge-title">${ch.title}${repeatable}</span>
       <div class="challenge-progress-wrap">
         <div class="challenge-progress-bar" style="width:${pct}%"></div>
       </div>
@@ -3499,31 +3724,103 @@ async function checkAllChallenges() {
     return;
   }
   const completed = userData?.completedChallenges || [];
+  const completions = userData?.challengeCompletions || {};
   let awarded = 0;
+  const updates = {};
 
   for (const ch of CHALLENGES) {
-    if (completed.includes(ch.id)) continue;
+    const alreadyDone = ch.repeatable
+      ? isChallengeCompletedToday(ch)
+      : completed.includes(ch.id);
+    if (alreadyDone) continue;
+
     const progress = getChallengeProgress(ch);
     if (progress >= ch.target) {
-      // Complete!
-      await db.collection('pd_users').doc(currentUser.uid).update({
-        completedChallenges: firebase.firestore.FieldValue.arrayUnion(ch.id),
-        bonusPacks: firebase.firestore.FieldValue.increment(ch.reward)
-      });
-      userData.completedChallenges = [...completed, ch.id];
-      userData.bonusPacks = (userData.bonusPacks || 0) + ch.reward;
       awarded += ch.reward;
       showToast(`Sfida "${ch.title}" completata. +${ch.reward} pack`);
+
+      if (ch.repeatable) {
+        // Mark as completed TODAY. At next local midnight (handled below by
+        // checkDailyChallengeReset) it becomes available again.
+        completions[ch.id] = challengeTodayKey();
+      } else {
+        completed.push(ch.id);
+      }
     }
   }
 
   if (awarded > 0) {
+    updates.completedChallenges = completed;
+    updates.bonusPacks = firebase.firestore.FieldValue.increment(awarded);
+    if (Object.keys(completions).length) updates.challengeCompletions = completions;
+    try {
+      await db.collection('pd_users').doc(currentUser.uid).update(updates);
+    } catch (err) {
+      console.warn('Challenge write error:', err);
+    }
+    userData.completedChallenges = completed;
+    userData.challengeCompletions = completions;
+    userData.bonusPacks = (userData.bonusPacks || 0) + awarded;
     updateHeaderUI();
     updatePackButtons();
     startTimerIfNeeded();
   }
 
   renderChallenges();
+}
+
+// Reset repeatable challenges whose completion date is before today.
+// Called on app init and whenever the date rolls over. Only challenges that
+// were ALREADY completed get reset; partial progress (e.g. 2/5 invites) is
+// preserved and continues from where it was.
+async function checkDailyChallengeReset() {
+  if (!isOnlineApp()) return;
+  const today = challengeTodayKey();
+  const completions = userData?.challengeCompletions || {};
+  let changed = false;
+  const fieldsToReset = {};
+
+  for (const ch of CHALLENGES) {
+    if (!ch.repeatable) continue;
+    const lastDone = completions[ch.id];
+    if (lastDone && lastDone !== today) {
+      // It was completed on a previous day → reset both the completion marker
+      // and the daily counter that feeds its progress.
+      delete completions[ch.id];
+      changed = true;
+      if (ch.field && ch.field !== 'inviteCount') {
+        // inviteCount is the cumulative total (used for referral tracking);
+        // invitedToday is the per-day counter we reset instead.
+        fieldsToReset[ch.field] = 0;
+      }
+    }
+  }
+
+  if (changed) {
+    const update = { challengeCompletions: completions, ...fieldsToReset };
+    try {
+      await db.collection('pd_users').doc(currentUser.uid).update(update);
+      userData.challengeCompletions = completions;
+      Object.keys(fieldsToReset).forEach(k => { userData[k] = 0; });
+      saveLocalSession();
+      checkAllChallenges();
+    } catch (err) {
+      console.warn('Daily reset error:', err);
+    }
+  }
+}
+
+// Schedule a check at the next local midnight so repeatable challenges that
+// were completed "yesterday" become available again while the app stays open.
+let midnightResetTimer = null;
+function scheduleMidnightReset() {
+  if (midnightResetTimer) clearTimeout(midnightResetTimer);
+  const now = new Date();
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
+  const msUntilMidnight = tomorrow.getTime() - now.getTime();
+  midnightResetTimer = setTimeout(() => {
+    checkDailyChallengeReset().finally(() => scheduleMidnightReset());
+  }, msUntilMidnight);
 }
 
 // ════════════════════════════════════════════════════════════
