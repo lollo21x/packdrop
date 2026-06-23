@@ -3,7 +3,7 @@
 // App shell first, background refresh, data-safe updates
 // ============================================================
 
-const CACHE_NAME = 'packdrop-v1.5';
+const CACHE_NAME = 'packdrop-v1.6';
 
 const CORE_ASSETS = [
   './',
@@ -26,7 +26,7 @@ const CORE_ASSETS = [
 
 const PASSTHROUGH_HOSTS = new Set([
   'api.github.com',
-  'v3.football.api-sports.io',
+  'www.thesportsdb.com',
   'firestore.googleapis.com',
   'identitytoolkit.googleapis.com',
   'securetoken.googleapis.com',
@@ -40,7 +40,7 @@ const CACHE_FIRST_HOSTS = new Set([
   'fonts.gstatic.com',
   'www.gstatic.com',
   'flagcdn.com',
-  'media.api-sports.io'
+  'r2.thesportsdb.com'
 ]);
 
 self.addEventListener('install', event => {
