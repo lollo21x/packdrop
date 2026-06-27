@@ -262,6 +262,137 @@ const ALL_CARDS = [
   { id:'icon_daei', type:'icon', name:'Ali Daei', subjectName:'Ali Daei', nation:'Iran', rarity:'rare', packType:'legends' },
 ];
 
+
+  // ════════════════════════════════════════════════════════════
+  // NATIONS PACK — Carte aggiuntive per pool bilanciato
+  // ════════════════════════════════════════════════════════════
+
+  // Epic (aggiunte: +8 → tot 12)
+  { id:'team_uru2', type:'team', name:'Uruguay', subjectName:'Uruguay', nation:'Uruguay', rarity:'epic', packType:'nations' },
+  { id:'team_col2', type:'team', name:'Colombia', subjectName:'Colombia', nation:'Colombia', rarity:'epic', packType:'nations' },
+  { id:'team_mar2', type:'team', name:'Marocco', subjectName:'Marocco', nation:'Marocco', rarity:'epic', packType:'nations' },
+  { id:'team_usa2', type:'team', name:'USA', subjectName:'USA', nation:'USA', rarity:'epic', packType:'nations' },
+  { id:'team_jpn2', type:'team', name:'Giappone', subjectName:'Giappone', nation:'Giappone', rarity:'epic', packType:'nations' },
+  { id:'team_nor2', type:'team', name:'Norvegia', subjectName:'Norvegia', nation:'Norvegia', rarity:'epic', packType:'nations' },
+  { id:'team_mex2', type:'team', name:'Messico', subjectName:'Messico', nation:'Messico', rarity:'epic', packType:'nations' },
+  { id:'team_sen2', type:'team', name:'Senegal', subjectName:'Senegal', nation:'Senegal', rarity:'epic', packType:'nations' },
+
+  // Rare (aggiunte: +18 → tot 30)
+  { id:'team_sco2', type:'team', name:'Scozia', subjectName:'Scozia', nation:'Scozia', rarity:'rare', packType:'nations' },
+  { id:'team_aus2', type:'team', name:'Australia', subjectName:'Australia', nation:'Australia', rarity:'rare', packType:'nations' },
+  { id:'team_sui2', type:'team', name:'Svizzera', subjectName:'Svizzera', nation:'Svizzera', rarity:'rare', packType:'nations' },
+  { id:'team_can2', type:'team', name:'Canada', subjectName:'Canada', nation:'Canada', rarity:'rare', packType:'nations' },
+  { id:'team_tur2', type:'team', name:'Turchia', subjectName:'Turchia', nation:'Turchia', rarity:'rare', packType:'nations' },
+  { id:'team_cro2', type:'team', name:'Croazia', subjectName:'Croazia', nation:'Croazia', rarity:'rare', packType:'nations' },
+  { id:'team_bel2', type:'team', name:'Belgio', subjectName:'Belgio', nation:'Belgio', rarity:'rare', packType:'nations' },
+  { id:'team_ned2', type:'team', name:'Paesi Bassi', subjectName:'Paesi Bassi', nation:'Paesi Bassi', rarity:'rare', packType:'nations' },
+  { id:'team_kor2', type:'team', name:'Corea del Sud', subjectName:'Corea del Sud', nation:'Corea del Sud', rarity:'rare', packType:'nations' },
+  { id:'team_ire', type:'team', name:'Iran', subjectName:'Iran', nation:'Iran', rarity:'rare', packType:'nations' },
+  { id:'team_alg2', type:'team', name:'Algeria', subjectName:'Algeria', nation:'Algeria', rarity:'rare', packType:'nations' },
+  { id:'team_ecu2', type:'team', name:'Ecuador', subjectName:'Ecuador', nation:'Ecuador', rarity:'rare', packType:'nations' },
+  { id:'team_par2', type:'team', name:'Paraguay', subjectName:'Paraguay', nation:'Paraguay', rarity:'rare', packType:'nations' },
+  { id:'team_gha2', type:'team', name:'Ghana', subjectName:'Ghana', nation:'Ghana', rarity:'rare', packType:'nations' },
+  { id:'team_tun2', type:'team', name:'Tunisia', subjectName:'Tunisia', nation:'Tunisia', rarity:'rare', packType:'nations' },
+  { id:'team_cze2', type:'team', name:'Repubblica Ceca', subjectName:'Repubblica Ceca', nation:'Repubblica Ceca', rarity:'rare', packType:'nations' },
+  { id:'team_swe2', type:'team', name:'Svezia', subjectName:'Svezia', nation:'Svezia', rarity:'rare', packType:'nations' },
+  { id:'team_bih2', type:'team', name:'Bosnia ed Erzegovina', subjectName:'Bosnia ed Erzegovina', nation:'Bosnia ed Erzegovina', rarity:'rare', packType:'nations' },
+
+  // ════════════════════════════════════════════════════════════
+  // STARS PACK — Carte aggiuntive per pool bilanciato
+  // ════════════════════════════════════════════════════════════
+
+  // Epic (aggiunte: +10 → tot 24)
+  { id:'star_dembele2', type:'player', name:'Ousmane Dembélé', subjectName:'Ousmane Dembélé', nation:'Francia', rarity:'epic', packType:'stars' },
+  { id:'star_gakpo', type:'player', name:'Cody Gakpo', subjectName:'Cody Gakpo', nation:'Paesi Bassi', rarity:'epic', packType:'stars' },
+  { id:'star_musiala2', type:'player', name:'Jamal Musiala', subjectName:'Jamal Musiala', nation:'Germania', rarity:'epic', packType:'stars' },
+  { id:'star_mitoma2', type:'player', name:'Kaoru Mitoma', subjectName:'Kaoru Mitoma', nation:'Giappone', rarity:'epic', packType:'stars' },
+  { id:'star_isak2', type:'player', name:'Alexander Isak', subjectName:'Alexander Isak', nation:'Svezia', rarity:'epic', packType:'stars' },
+  { id:'star_nunez2', type:'player', name:'Darwin Núñez', subjectName:'Darwin Núñez', nation:'Uruguay', rarity:'epic', packType:'stars' },
+  { id:'star_pulisic2', type:'player', name:'Christian Pulisic', subjectName:'Christian Pulisic', nation:'USA', rarity:'epic', packType:'stars' },
+  { id:'star_james2', type:'player', name:'James Rodríguez', subjectName:'James Rodríguez', nation:'Colombia', rarity:'epic', packType:'stars' },
+  { id:'star_hakimi2', type:'player', name:'Achraf Hakimi', subjectName:'Achraf Hakimi', nation:'Marocco', rarity:'epic', packType:'stars' },
+  { id:'star_david2', type:'player', name:'Jonathan David', subjectName:'Jonathan David', nation:'Canada', rarity:'epic', packType:'stars' },
+
+  // Rare (aggiunte: +32 → tot 60)
+  { id:'star_szoboszlai2', type:'player', name:'Dominik Szoboszlai', subjectName:'Dominik Szoboszlai', nation:'Ungheria', rarity:'rare', packType:'stars' },
+  { id:'star_morata', type:'player', name:'Álvaro Morata', subjectName:'Álvaro Morata', nation:'Spagna', rarity:'rare', packType:'stars' },
+  { id:'star_bernardo', type:'player', name:'Bernardo Silva', subjectName:'Bernardo Silva', nation:'Portogallo', rarity:'rare', packType:'stars' },
+  { id:'star_camavinga', type:'player', name:'Eduardo Camavinga', subjectName:'Eduardo Camavinga', nation:'Francia', rarity:'rare', packType:'stars' },
+  { id:'star_gnonto', type:'player', name:'Wilfried Gnonto', subjectName:'Wilfried Gnonto', nation:'Svizzera', rarity:'rare', packType:'stars' },
+  { id:'star_mckennie', type:'player', name:'Weston McKennie', subjectName:'Weston McKennie', nation:'USA', rarity:'rare', packType:'stars' },
+  { id:'star_aaronson', type:'player', name:'Brenden Aaronson', subjectName:'Brenden Aaronson', nation:'USA', rarity:'rare', packType:'stars' },
+  { id:'star_kramaric', type:'player', name:'Andrej Kramarić', subjectName:'Andrej Kramarić', nation:'Croazia', rarity:'rare', packType:'stars' },
+  { id:'star_kovacic', type:'player', name:'Mateo Kovačić', subjectName:'Mateo Kovačić', nation:'Croazia', rarity:'rare', packType:'stars' },
+  { id:'star_hojbjerg', type:'player', name:'Pierre-Emile Højbjerg', subjectName:'Pierre-Emile Højbjerg', nation:'Danimarca', rarity:'rare', packType:'stars' },
+  { id:'star_fernandes', type:'player', name:'Bruno Fernandes', subjectName:'Bruno Fernandes', nation:'Portogallo', rarity:'rare', packType:'stars' },
+  { id:'star_diatta', type:'player', name:'Krepin Diatta', subjectName:'Krepin Diatta', nation:'Senegal', rarity:'rare', packType:'stars' },
+  { id:'star_ndidi', type:'player', name:'Wilfred Ndidi', subjectName:'Wilfred Ndidi', nation:'Nigeria', rarity:'rare', packType:'stars' },
+  { id:'star_bah', type:'player', name:'Abdoulaye Bah', subjectName:'Abdoulaye Bah', nation:'Guinea', rarity:'rare', packType:'stars' },
+  { id:'star_vanaken', type:'player', name:'Hans Vanaken', subjectName:'Hans Vanaken', nation:'Belgio', rarity:'rare', packType:'stars' },
+  { id:'star_trossard', type:'player', name:'Leandro Trossard', subjectName:'Leandro Trossard', nation:'Belgio', rarity:'rare', packType:'stars' },
+  { id:'star_tadic', type:'player', name:'Dušan Tadić', subjectName:'Dušan Tadić', nation:'Serbia', rarity:'rare', packType:'stars' },
+  { id:'star_mitrovic', type:'player', name:'Aleksandar Mitrović', subjectName:'Aleksandar Mitrović', nation:'Serbia', rarity:'rare', packType:'stars' },
+  { id:'star_guendouzi', type:'player', name:'Mattéo Guendouzi', subjectName:'Mattéo Guendouzi', nation:'Francia', rarity:'rare', packType:'stars' },
+  { id:'star_llorente', type:'player', name:'Marcos Llorente', subjectName:'Marcos Llorente', nation:'Spagna', rarity:'rare', packType:'stars' },
+  { id:'star_diagne', type:'player', name:'Mbaye Diagne', subjectName:'Mbaye Diagne', nation:'Senegal', rarity:'rare', packType:'stars' },
+  { id:'star_aouar', type:'player', name:'Houssem Aouar', subjectName:'Houssem Aouar', nation:'Algeria', rarity:'rare', packType:'stars' },
+  { id:'star_bennacer', type:'player', name:'Ismail Bennacer', subjectName:'Ismail Bennacer', nation:'Algeria', rarity:'rare', packType:'stars' },
+  { id:'star_aboubakar', type:'player', name:'Vincent Aboubakar', subjectName:'Vincent Aboubakar', nation:'Camerun', rarity:'rare', packType:'stars' },
+  { id:'star_sabitzer', type:'player', name:'Marcel Sabitzer', subjectName:'Marcel Sabitzer', nation:'Austria', rarity:'rare', packType:'stars' },
+  { id:'star_arnautovic', type:'player', name:'Marko Arnautović', subjectName:'Marko Arnautović', nation:'Austria', rarity:'rare', packType:'stars' },
+  { id:'star_wood2', type:'player', name:'Chris Wood', subjectName:'Chris Wood', nation:'Nuova Zelanda', rarity:'rare', packType:'stars' },
+  { id:'star_olmo', type:'player', name:'Dani Olmo', subjectName:'Dani Olmo', nation:'Spagna', rarity:'rare', packType:'stars' },
+  { id:'star_szczesny', type:'player', name:'Wojciech Szczęsny', subjectName:'Wojciech Szczęsny', nation:'Polonia', rarity:'rare', packType:'stars' },
+  { id:'star_lewandowski', type:'player', name:'Robert Lewandowski', subjectName:'Robert Lewandowski', nation:'Polonia', rarity:'rare', packType:'stars' },
+  { id:'star_frimpong', type:'player', name:'Jeremie Frimpong', subjectName:'Jeremie Frimpong', nation:'Paesi Bassi', rarity:'rare', packType:'stars' },
+  { id:'star_simons', type:'player', name:'Xavi Simons', subjectName:'Xavi Simons', nation:'Paesi Bassi', rarity:'rare', packType:'stars' },
+
+  // ════════════════════════════════════════════════════════════
+  // LEGENDS PACK — Carte aggiuntive per pool bilanciato
+  // ════════════════════════════════════════════════════════════
+
+  // Epic (aggiunte: +12 → tot 32)
+  { id:'icon_r9_epic', type:'icon', name:'Ronaldo Nazário', subjectName:'Ronaldo Nazário', nation:'Brasile', rarity:'epic', packType:'legends' },
+  { id:'icon_zidane2', type:'icon', name:'Zinedine Zidane', subjectName:'Zinedine Zidane', nation:'Francia', rarity:'epic', packType:'legends' },
+  { id:'icon_nedved2', type:'icon', name:'Pavel Nedvěd', subjectName:'Pavel Nedvěd', nation:'Repubblica Ceca', rarity:'epic', packType:'legends' },
+  { id:'icon_shevchenko', type:'icon', name:'Andriy Shevchenko', subjectName:'Andriy Shevchenko', nation:'Ucraina', rarity:'epic', packType:'legends' },
+  { id:'icon_lampard', type:'icon', name:'Frank Lampard', subjectName:'Frank Lampard', nation:'Inghilterra', rarity:'epic', packType:'legends' },
+  { id:'icon_terry', type:'icon', name:'John Terry', subjectName:'John Terry', nation:'Inghilterra', rarity:'epic', packType:'legends' },
+  { id:'icon_riquelme', type:'icon', name:'Juan Román Riquelme', subjectName:'Juan Román Riquelme', nation:'Argentina', rarity:'epic', packType:'legends' },
+  { id:'icon_saviola', type:'icon', name:'Javier Saviola', subjectName:'Javier Saviola', nation:'Argentina', rarity:'epic', packType:'legends' },
+  { id:'icon_ronaldinho2', type:'icon', name:'Ronaldinho', subjectName:'Ronaldinho', nation:'Brasile', rarity:'epic', packType:'legends' },
+  { id:'icon_adriano', type:'icon', name:'Adriano', subjectName:'Adriano', nation:'Brasile', rarity:'epic', packType:'legends' },
+  { id:'icon_kaka', type:'icon', name:'Kaká', subjectName:'Kaká', nation:'Brasile', rarity:'epic', packType:'legends' },
+  { id:'icon_suarez_icon', type:'icon', name:'Luis Suárez', subjectName:'Luis Suárez', nation:'Uruguay', rarity:'epic', packType:'legends' },
+
+  // Rare (aggiunte: +26 → tot 80)
+  { id:'icon_etoo', type:'icon', name:'Samuel Eto'o', subjectName:'Samuel Eto'o', nation:'Camerun', rarity:'rare', packType:'legends' },
+  { id:'icon_abedi', type:'icon', name:'Abedi Pelé', subjectName:'Abedi Pelé', nation:'Ghana', rarity:'rare', packType:'legends' },
+  { id:'icon_toure', type:'icon', name:'Yaya Touré', subjectName:'Yaya Touré', nation:"Costa d'Avorio", rarity:'rare', packType:'legends' },
+  { id:'icon_banega', type:'icon', name:'Ever Banega', subjectName:'Ever Banega', nation:'Argentina', rarity:'rare', packType:'legends' },
+  { id:'icon_tevez', type:'icon', name:'Carlos Tevez', subjectName:'Carlos Tevez', nation:'Argentina', rarity:'rare', packType:'legends' },
+  { id:'icon_cambiasso', type:'icon', name:'Esteban Cambiasso', subjectName:'Esteban Cambiasso', nation:'Argentina', rarity:'rare', packType:'legends' },
+  { id:'icon_giggs', type:'icon', name:'Ryan Giggs', subjectName:'Ryan Giggs', nation:'Galles', rarity:'rare', packType:'legends' },
+  { id:'icon_ferdinand', type:'icon', name:'Rio Ferdinand', subjectName:'Rio Ferdinand', nation:'Inghilterra', rarity:'rare', packType:'legends' },
+  { id:'icon_owen', type:'icon', name:'Michael Owen', subjectName:'Michael Owen', nation:'Inghilterra', rarity:'rare', packType:'legends' },
+  { id:'icon_cole', type:'icon', name:'Ashley Cole', subjectName:'Ashley Cole', nation:'Inghilterra', rarity:'rare', packType:'legends' },
+  { id:'icon_ribery', type:'icon', name:'Franck Ribéry', subjectName:'Franck Ribéry', nation:'Francia', rarity:'rare', packType:'legends' },
+  { id:'icon_thuram', type:'icon', name:'Lilian Thuram', subjectName:'Lilian Thuram', nation:'Francia', rarity:'rare', packType:'legends' },
+  { id:'icon_malouda', type:'icon', name:'Florent Malouda', subjectName:'Florent Malouda', nation:'Francia', rarity:'rare', packType:'legends' },
+  { id:'icon_schweinsteiger', type:'icon', name:'Bastian Schweinsteiger', subjectName:'Bastian Schweinsteiger', nation:'Germania', rarity:'rare', packType:'legends' },
+  { id:'icon_lehmann', type:'icon', name:'Jens Lehmann', subjectName:'Jens Lehmann', nation:'Germania', rarity:'rare', packType:'legends' },
+  { id:'icon_stam', type:'icon', name:'Jaap Stam', subjectName:'Jaap Stam', nation:'Paesi Bassi', rarity:'rare', packType:'legends' },
+  { id:'icon_nesta', type:'icon', name:'Alessandro Nesta', subjectName:'Alessandro Nesta', nation:'Italia', rarity:'rare', packType:'legends' },
+  { id:'icon_albertini', type:'icon', name:'Demetrio Albertini', subjectName:'Demetrio Albertini', nation:'Italia', rarity:'rare', packType:'legends' },
+  { id:'icon_conte', type:'icon', name:'Antonio Conte', subjectName:'Antonio Conte', nation:'Italia', rarity:'rare', packType:'legends' },
+  { id:'icon_hierro2', type:'icon', name:'Fernando Hierro', subjectName:'Fernando Hierro', nation:'Spagna', rarity:'rare', packType:'legends' },
+  { id:'icon_morientes', type:'icon', name:'Fernando Morientes', subjectName:'Fernando Morientes', nation:'Spagna', rarity:'rare', packType:'legends' },
+  { id:'icon_roberto_mancini', type:'icon', name:'Roberto Mancini', subjectName:'Roberto Mancini', nation:'Italia', rarity:'rare', packType:'legends' },
+  { id:'icon_ronaldo_cr7_icon', type:'icon', name:'Cristiano Ronaldo', subjectName:'Cristiano Ronaldo', nation:'Portogallo', rarity:'rare', packType:'legends' },
+  { id:'icon_deco', type:'icon', name:'Deco', subjectName:'Deco', nation:'Portogallo', rarity:'rare', packType:'legends' },
+  { id:'icon_petit', type:'icon', name:'Emmanuel Petit', subjectName:'Emmanuel Petit', nation:'Francia', rarity:'rare', packType:'legends' },
+  { id:'icon_zubizarreta2', type:'icon', name:'Andoni Zubizarreta', subjectName:'Andoni Zubizarreta', nation:'Spagna', rarity:'rare', packType:'legends' },
+
 // ── Helper functions ──
 
 function getCardById(id) {
