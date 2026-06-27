@@ -260,8 +260,6 @@ const ALL_CARDS = [
   { id:'icon_park', type:'icon', name:'Park Ji-sung', subjectName:'Park Ji-sung', nation:'Corea del Sud', rarity:'rare', packType:'legends' },
   { id:'icon_inamoto', type:'icon', name:'Junichi Inamoto', subjectName:'Junichi Inamoto', nation:'Giappone', rarity:'rare', packType:'legends' },
   { id:'icon_daei', type:'icon', name:'Ali Daei', subjectName:'Ali Daei', nation:'Iran', rarity:'rare', packType:'legends' },
-];
-
 
   // ════════════════════════════════════════════════════════════
   // NATIONS PACK — Carte aggiuntive per pool bilanciato
@@ -366,7 +364,7 @@ const ALL_CARDS = [
   { id:'icon_suarez_icon', type:'icon', name:'Luis Suárez', subjectName:'Luis Suárez', nation:'Uruguay', rarity:'epic', packType:'legends' },
 
   // Rare (aggiunte: +26 → tot 80)
-  { id:'icon_etoo', type:'icon', name:'Samuel Eto'o', subjectName:'Samuel Eto'o', nation:'Camerun', rarity:'rare', packType:'legends' },
+  { id:'icon_etoo', type:'icon', name:'Samuel Eto’o', subjectName:'Samuel Eto’o', nation:'Camerun', rarity:'rare', packType:'legends' },
   { id:'icon_abedi', type:'icon', name:'Abedi Pelé', subjectName:'Abedi Pelé', nation:'Ghana', rarity:'rare', packType:'legends' },
   { id:'icon_toure', type:'icon', name:'Yaya Touré', subjectName:'Yaya Touré', nation:"Costa d'Avorio", rarity:'rare', packType:'legends' },
   { id:'icon_banega', type:'icon', name:'Ever Banega', subjectName:'Ever Banega', nation:'Argentina', rarity:'rare', packType:'legends' },
@@ -392,6 +390,8 @@ const ALL_CARDS = [
   { id:'icon_deco', type:'icon', name:'Deco', subjectName:'Deco', nation:'Portogallo', rarity:'rare', packType:'legends' },
   { id:'icon_petit', type:'icon', name:'Emmanuel Petit', subjectName:'Emmanuel Petit', nation:'Francia', rarity:'rare', packType:'legends' },
   { id:'icon_zubizarreta2', type:'icon', name:'Andoni Zubizarreta', subjectName:'Andoni Zubizarreta', nation:'Spagna', rarity:'rare', packType:'legends' },
+
+];
 
 // ── Helper functions ──
 
