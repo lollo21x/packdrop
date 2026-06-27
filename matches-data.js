@@ -19,7 +19,8 @@ const WC26_FLAG = {
   'Tunisia': 'tn', 'Paesi Bassi': 'nl', 'Giappone': 'jp', 'Svezia': 'se',
   'Turchia': 'tr', 'Stati Uniti': 'us', 'Paraguay': 'py', 'Australia': 'au',
   'Capo Verde': 'cv', 'Arabia Saudita': 'sa', 'Uruguay': 'uy', 'Spagna': 'es',
-  'Egitto': 'eg', 'Iran': 'ir', 'Nuova Zelanda': 'nz', 'Belgio': 'be'
+  'Egitto': 'eg', 'Iran': 'ir', 'Nuova Zelanda': 'nz', 'Belgio': 'be',
+  'Da definire': '_', 'Vincente Gruppo L': '_'
 };
 
 function flagUrl(code, w = 160) {
@@ -72,7 +73,35 @@ const WC26_MATCHES = [
   { id:'m29', kickoff:'2026-06-28T01:30:00+02:00', home:'Colombia',          away:'Portogallo',        phase:'Fase a Gironi' },
   { id:'m30', kickoff:'2026-06-28T01:30:00+02:00', home:'RD Congo',          away:'Uzbekistan',        phase:'Fase a Gironi' },
   { id:'m31', kickoff:'2026-06-28T04:00:00+02:00', home:'Algeria',           away:'Austria',           phase:'Fase a Gironi' },
-  { id:'m32', kickoff:'2026-06-28T04:00:00+02:00', home:'Giordania',         away:'Argentina',         phase:'Fase a Gironi' }
+  { id:'m32', kickoff:'2026-06-28T04:00:00+02:00', home:'Giordania',         away:'Argentina',         phase:'Fase a Gironi' },
+  { id:'m33', kickoff:'2026-06-28T21:00:00+02:00', home:'Sudafrica',         away:'Canada',            phase:'Sedicesimi di finale' },
+
+  // ── Lunedì 29 giugno ──
+  { id:'m34', kickoff:'2026-06-29T19:00:00+02:00', home:'Brasile',           away:'Giappone',          phase:'Sedicesimi di finale' },
+  { id:'m35', kickoff:'2026-06-29T22:30:00+02:00', home:'Germania',          away:'Paraguay',          phase:'Sedicesimi di finale' },
+
+  // ── Martedì 30 giugno ──
+  { id:'m36', kickoff:'2026-06-30T03:00:00+02:00', home:'Paesi Bassi',       away:'Marocco',           phase:'Sedicesimi di finale' },
+  { id:'m37', kickoff:'2026-06-30T19:00:00+02:00', home:"Costa d'Avorio",    away:'Norvegia',          phase:'Sedicesimi di finale' },
+  { id:'m38', kickoff:'2026-06-30T23:00:00+02:00', home:'Francia',           away:'Svezia',            phase:'Sedicesimi di finale' },
+
+  // ── Mercoledì 1 luglio ──
+  { id:'m39', kickoff:'2026-07-01T03:00:00+02:00', home:'Messico',           away:'Da definire',       phase:'Sedicesimi di finale' },
+  { id:'m40', kickoff:'2026-07-01T18:00:00+02:00', home:'Vincente Gruppo L', away:'Da definire',       phase:'Sedicesimi di finale' },
+  { id:'m41', kickoff:'2026-07-01T22:00:00+02:00', home:'Belgio',            away:'Da definire',       phase:'Sedicesimi di finale' },
+
+  // ── Giovedì 2 luglio ──
+  { id:'m42', kickoff:'2026-07-02T02:00:00+02:00', home:'Stati Uniti',       away:'Bosnia ed Erzegovina', phase:'Sedicesimi di finale' },
+  { id:'m43', kickoff:'2026-07-02T21:00:00+02:00', home:'Spagna',            away:'Da definire',       phase:'Sedicesimi di finale' },
+
+  // ── Venerdì 3 luglio ──
+  { id:'m44', kickoff:'2026-07-03T01:00:00+02:00', home:'Da definire',       away:'Da definire',       phase:'Sedicesimi di finale' },
+  { id:'m45', kickoff:'2026-07-03T05:00:00+02:00', home:'Svizzera',          away:'Da definire',       phase:'Sedicesimi di finale' },
+  { id:'m46', kickoff:'2026-07-03T20:00:00+02:00', home:'Australia',         away:'Egitto',            phase:'Sedicesimi di finale' },
+
+  // ── Sabato 4 luglio ──
+  { id:'m47', kickoff:'2026-07-04T00:00:00+02:00', home:'Argentina',         away:'Capo Verde',        phase:'Sedicesimi di finale' },
+  { id:'m48', kickoff:'2026-07-04T03:30:00+02:00', home:'Da definire',       away:'Da definire',       phase:'Sedicesimi di finale' }
 ];
 
 // Normalise matches into a richer shape used by the renderer
