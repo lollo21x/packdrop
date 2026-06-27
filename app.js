@@ -1653,26 +1653,17 @@ function startTimerIfNeeded() {
 
 function rollRarity(packType) {
   const rand = Math.random() * 100;
-  if (packType === 'nations') {
-    if (rand < 1) return 'legendary';
-    if (rand < 10) return 'epic';
-    if (rand < 40) return 'rare';
-    return 'common';
-  }
-  if (packType === 'stars') {
-    // Same odds as Nations: 1% legendary, 9% epic, 30% rare, 60% common.
-    if (rand < 1) return 'legendary';
-    if (rand < 10) return 'epic';
-    if (rand < 40) return 'rare';
-    return 'common';
-  }
+  // Unified odds for all packs: 1% legendary, 4% epic, 20% rare, 75% common.
+  // Legends Pack has no commons → the 75% common bucket becomes rare instead (95% rare total).
   if (packType === 'legends') {
-    // Same odds as Nations, but Legends has no commons, so the 60% that
-    // would normally be common is absorbed by rare → 90% rare.
     if (rand < 1) return 'legendary';
-    if (rand < 10) return 'epic';
-    return 'rare';
+    if (rand < 5) return 'epic';
+    return 'rare'; // 95% rare (absorbs the common slot)
   }
+  // nations & stars
+  if (rand < 1) return 'legendary';
+  if (rand < 5) return 'epic';
+  if (rand < 25) return 'rare';
   return 'common';
 }
 
@@ -3121,6 +3112,21 @@ function setupProfileHandlers() {
       btnUpdateNow.disabled = true;
       const pendingSha = localStorage.getItem(UPDATE_PENDING_SHA_KEY);
       await applyAppUpdate(pendingSha || undefined);
+    });
+  }
+
+  // Logout
+  const btnLogout = $('btn-logout');
+  if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+      if (!firebaseReady || !auth) return;
+      const confirmed = window.confirm('Vuoi davvero uscire dal tuo account?');
+      if (!confirmed) return;
+      try {
+        await auth.signOut();
+      } catch (err) {
+        console.error('Logout error:', err);
+      }
     });
   }
 }
