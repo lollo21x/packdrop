@@ -4509,8 +4509,13 @@ function clampScore(v) {
 
 // Award pending rewards for finished matches the user predicted correctly.
 // Called on view refresh; claims at most once per match (tracked locally).
+// In-flight lock: matches are added to `claimed` and persisted to localStorage
+// BEFORE the async Firestore write, so concurrent calls (ticker, tab switch,
+// admin result save) cannot claim the same match a second time.
+let _rewardClaimInFlight = false;
 async function processPendingRewards() {
   if (!isOnlineApp() || !currentUser) return;
+  if (_rewardClaimInFlight) return; // already processing; skip this call
   if (!predictionsState.claimed) predictionsState.claimed = loadClaimedSet();
   const my = predictionsState.myPredictions || {};
   const rewards = [];
@@ -4525,13 +4530,18 @@ async function processPendingRewards() {
   });
   if (!rewards.length) return;
 
+  // ── Mark as claimed BEFORE the await so re-entrant calls see them ──
+  _rewardClaimInFlight = true;
+  rewards.forEach(mid => predictionsState.claimed.add(mid));
+  saveClaimedSet(); // persist immediately; survives a page reload too
+
   try {
     await db.collection('pd_users').doc(currentUser.uid).update({
       bonusPacks: firebase.firestore.FieldValue.increment(rewards.length * PREDICTION_REWARD)
     });
+    // onSnapshot will overwrite userData.bonusPacks with the server value,
+    // but update it locally now so the UI is instant.
     userData.bonusPacks = (userData.bonusPacks || 0) + rewards.length * PREDICTION_REWARD;
-    rewards.forEach(mid => predictionsState.claimed.add(mid));
-    saveClaimedSet();
     saveLocalSession();
     updatePackButtons();
     if (typeof updateHeaderUI === 'function') updateHeaderUI();
@@ -4541,7 +4551,11 @@ async function processPendingRewards() {
       showToast(`${rewards.length} pronostici vinti! +${rewards.length * PREDICTION_REWARD} pacchetti`);
     }
   } catch (err) {
+    // Firestore write failed: the claim is already in localStorage to prevent
+    // double-award if the write actually went through despite the error.
     console.warn('Reward claim failed (will retry next visit):', err);
+  } finally {
+    _rewardClaimInFlight = false;
   }
 }
 
