@@ -2844,7 +2844,9 @@ function syncUpdateNowButton() {
 
 async function renderFriendsList() {
   const list = $('friends-list');
-  const friends = userData?.friends || [];
+  // Deduplicate in case the same UID ended up in the array more than once
+  // (can happen when concurrent writes both do arrayUnion on the same value).
+  const friends = [...new Set(userData?.friends || [])];
 
   if (friends.length === 0) {
     list.innerHTML = `
