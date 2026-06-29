@@ -4210,4 +4210,15 @@ body::after {
   border-radius: 999px;
 }
 
+/* ── Rimozione animazioni ── */
+.pack-card[data-tier="legendary"] .pack-art { animation: none; }
+.btn-primary.pulse { animation: none; }
+
+/* ── Gradienti: verde scuro → verde chiaro (sostituisce quelli verde→blu) ── */
+.challenge-progress-bar  { background: linear-gradient(90deg, #1a9a5c, #5ed9a0); box-shadow: 0 0 14px rgba(66,211,146,0.4); }
+.pack-dot.active         { background: linear-gradient(90deg, #1a9a5c, #5ed9a0); box-shadow: 0 0 14px rgba(66,211,146,0.5); }
+.profile-tab.active::after { background: linear-gradient(90deg, #1a9a5c, #5ed9a0); }
+.progress-bar-fill       { background: linear-gradient(90deg, #1a9a5c 0%, #42d392 60%, #6ee7b7 100%); box-shadow: 0 0 16px rgba(66,211,146,0.45); }
+
+
 
