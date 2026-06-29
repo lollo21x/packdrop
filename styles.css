@@ -3696,20 +3696,15 @@ body::after {
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
-/* Sheen diagonale più ricco */
+/* Sheen diagonale — ripristinato all'originale (il bianco era troppo intenso) */
 .pack-shine {
-  background: linear-gradient(
-    108deg,
-    transparent 0%,
-    color-mix(in srgb, var(--pack-accent, var(--accent)) 38%, rgba(255,255,255,0.6)) 45%,
-    color-mix(in srgb, var(--pack-accent, var(--accent)) 12%, transparent) 100%
-  );
-  width: 44%;
-  opacity: 0.28;
+  background: color-mix(in srgb, var(--pack-accent, var(--accent)) 22%, transparent);
+  width: 60%;
+  opacity: 0.5;
 }
 .pack-card.selected .pack-shine {
-  opacity: 0.82;
-  left: 28%;
+  opacity: 0.9;
+  left: 30%;
 }
 
 /* Art icon più grande e più profonda */
@@ -4202,4 +4197,17 @@ body::after {
   box-shadow: 0 0 24px rgba(66,211,146,0.08);
   border-radius: 22px;
 }
+
+/* ── Rarity badge nelle card collezione: centrata in basso ── */
+.card-rarity-badge {
+  bottom: 7px;
+  right: 50%;
+  transform: translateX(50%);
+}
+
+/* ── Pulsante Collezione negli amici: più arrotondato ── */
+.btn-friend-action.primary {
+  border-radius: 999px;
+}
+
 
