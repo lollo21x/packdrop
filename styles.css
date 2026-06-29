@@ -4220,11 +4220,59 @@ body::after {
 .profile-tab.active::after { background: linear-gradient(90deg, #1a9a5c, #5ed9a0); }
 .progress-bar-fill       { background: linear-gradient(90deg, #1a9a5c 0%, #42d392 60%, #6ee7b7 100%); box-shadow: 0 0 16px rgba(66,211,146,0.45); }
 
-/* ── Glow pacchetti: sopra action-buttons, non clippato ── */
-.pack-carousel-wrapper { position: relative; z-index: 3; }
-.action-buttons, #reset-timer, .pack-balance { position: relative; z-index: 1; }
-.pack-carousel { overflow-y: visible; padding-bottom: 90px; margin-bottom: -50px; }
+/* ── Glow pacchetti: sopra action-buttons, non clippato ──
+   PROBLEMA: overflow-x:auto forza overflow-y:hidden sui browser mobile,
+   creando un frame che clippa il glow su tutti i lati sotto ~759px.
+   SOLUZIONE: il glow viene emesso tramite filter:drop-shadow (non clippato
+   dall'overflow) + il wrapper usa padding per dare spazio al glow,
+   con z-index superiore agli elementi sottostanti. ── */
 
+/* Il wrapper sale sopra action-buttons (z-index 1) e body::after (z-index -1) */
+.pack-carousel-wrapper {
+  position: relative;
+  z-index: 5;
+  /* Padding verticale per dare spazio al glow senza essere clippato dal parent */
+  padding-top: 24px;
+  padding-bottom: 24px;
+  margin-top: -24px;
+  margin-bottom: -24px;
+  /* overflow:visible sul wrapper permette al glow di uscire */
+  overflow: visible;
+}
 
+/* action-buttons e timer stanno sotto il glow dei pacchetti */
+.action-buttons,
+#reset-timer,
+.pack-balance {
+  position: relative;
+  z-index: 2;
+}
 
+/* Il carousel scorre orizzontalmente; non possiamo avere overflow-x:auto +
+   overflow-y:visible sullo stesso elemento (i browser li collegano).
+   Usiamo quindi un approccio a due livelli: il wrapper outer (pack-carousel-wrapper)
+   è overflow:visible, il carousel inner gestisce solo lo scroll orizzontale.
+   Il glow verticale fuoriesce dal wrapper che è visible. */
+.pack-carousel {
+  /* Non sovrascriviamo overflow-y qui: il clipping avviene solo dentro il carousel.
+     Il wrapper con overflow:visible e padding lascia spazio al glow esterno. */
+  padding-top: 28px;
+  padding-bottom: 80px;
+  margin-top: -8px;
+  margin-bottom: -46px;
+}
 
+/* Usa filter:drop-shadow sul pack selezionato come secondo livello di glow:
+   filter non viene clippato dall'overflow del parent, quindi "esplode" fuori
+   dal carousel anche su mobile. box-shadow resta per i browser desktop. */
+.pack-card.selected {
+  filter:
+    drop-shadow(0 0 32px color-mix(in srgb, var(--pack-accent, var(--accent)) 55%, transparent))
+    drop-shadow(0 18px 48px color-mix(in srgb, var(--pack-accent, var(--accent)) 30%, transparent));
+}
+
+.pack-card[data-tier="legendary"].selected {
+  filter:
+    drop-shadow(0 0 36px rgba(248, 195, 90, 0.62))
+    drop-shadow(0 18px 52px rgba(248, 195, 90, 0.35));
+}
