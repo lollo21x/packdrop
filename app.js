@@ -888,7 +888,19 @@ async function initApp() {
   // Set up real-time listener for user profile (packs, streak, friend requests, etc.)
   userListenerUnsubscribe = userRef.onSnapshot(doc => {
     if (doc.exists) {
-      userData = doc.data();
+      const incoming = doc.data();
+      // While a challenge check is in flight, preserve the local
+      // completedChallenges / challengeCompletions / bonusPacks so the
+      // snapshot doesn't reset them to the pre-award server state.
+      if (challengeCheckInFlight) {
+        const keep = {};
+        if (userData && userData.completedChallenges) keep.completedChallenges = userData.completedChallenges;
+        if (userData && userData.challengeCompletions) keep.challengeCompletions = userData.challengeCompletions;
+        if (userData && userData.bonusPacks !== undefined) keep.bonusPacks = userData.bonusPacks;
+        userData = Object.assign({}, incoming, keep);
+      } else {
+        userData = incoming;
+      }
       saveLocalSession();
       updateHeaderUI();
       updatePackButtons();
@@ -1766,11 +1778,15 @@ async function openPack(packType, isWelcome = false) {
       batch.set(codeRef, buildPublicCardCodeData(card, code, serverUnlockedAt));
 
       if (!isWelcome) {
-        batch.update(db.collection('pd_users').doc(currentUser.uid), {
-          dailyPacks: userData.dailyPacks,
-          bonusPacks: userData.bonusPacks,
+        const packBalanceUpdate = {
           totalPacksOpened: firebase.firestore.FieldValue.increment(1)
-        });
+        };
+        if (balanceSource === 'daily') {
+          packBalanceUpdate.dailyPacks = firebase.firestore.FieldValue.increment(-1);
+        } else if (balanceSource === 'bonus') {
+          packBalanceUpdate.bonusPacks = firebase.firestore.FieldValue.increment(-1);
+        }
+        batch.update(db.collection('pd_users').doc(currentUser.uid), packBalanceUpdate);
       }
 
       await batch.commit();
@@ -3283,6 +3299,15 @@ async function sendFriendRequest(targetUid) {
       addUniqueLocal('friends', targetUid);
       removeLocal('sentRequests', targetUid);
       showToast('Amicizia accettata.');
+      // Best-effort: add ourselves to the other user's friends list
+      try {
+        await db.collection('pd_users').doc(targetUid).update({
+          friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
+          sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+        });
+      } catch (e) {
+        console.warn('Cross-user friend update skipped:', e);
+      }
     } else if (result.status === 'pending') {
       addUniqueLocal('sentRequests', targetUid);
       showToast('Richiesta già inviata.');
@@ -3337,7 +3362,7 @@ async function acceptFriendRequest(fromUid) {
         });
       }
 
-      // Each user writes ONLY their own friends array.
+      // Update the accepter's own friends array inside the transaction.
       transaction.update(myRef, {
         friends: firebase.firestore.FieldValue.arrayUnion(fromUid),
         sentRequests: firebase.firestore.FieldValue.arrayRemove(fromUid)
@@ -3348,6 +3373,20 @@ async function acceptFriendRequest(fromUid) {
     removeLocal('sentRequests', fromUid);
     saveLocalSession();
     showToast('✓ Amicizia accettata.');
+
+    // Best-effort: also add ourselves to the sender's friends list so
+    // they see the friendship immediately. If Firestore rules block
+    // cross-user writes, the sender will still pick up the friendship
+    // via their outgoing-accepted listener or syncAcceptedFriendships.
+    try {
+      await db.collection('pd_users').doc(fromUid).update({
+        friends: firebase.firestore.FieldValue.arrayUnion(currentUser.uid),
+        sentRequests: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+      });
+    } catch (crossErr) {
+      console.warn('Cross-user friend update skipped (rules may block it):', crossErr);
+    }
+
     await syncAcceptedFriendships();
     checkAllChallenges();
   } catch (err) {
@@ -3405,24 +3444,28 @@ async function removeFriend(friendUid) {
 // silently denied by Firestore rules.
 let incomingRequests = [];          // array of { id, from, fromUsername, status }
 let incomingRequestsListenerUnsubscribe = null;
+let outgoingRequestsListenerUnsubscribe = null;
 
 // Starts listening for pending friend requests addressed to the current user.
 // Realtime: as soon as someone sends a request, it shows up in the Amici tab
 // and the profile badge updates.
+// Uses single-field queries to avoid composite-index requirements — status
+// filtering is done client-side.
 function startIncomingRequestsListener() {
   if (!isOnlineApp()) return;
   stopIncomingRequestsListener();
   try {
-    // Incoming PENDING requests (where to == me): drive the badge + the
-    // "Richieste in arrivo" list.
+    // Incoming requests (where to == me): single-field query, filter by
+    // status client-side so it works without a composite Firestore index.
     const q = db.collection('pd_friend_requests')
-      .where('to', '==', currentUser.uid)
-      .where('status', '==', 'pending');
+      .where('to', '==', currentUser.uid);
     incomingRequestsListenerUnsubscribe = q.onSnapshot(snap => {
-      incomingRequests = snap.docs.map(d => {
-        const data = d.data();
-        return { id: d.id, from: data.from, fromUsername: data.fromUsername || '', status: data.status };
-      });
+      incomingRequests = snap.docs
+        .map(d => {
+          const data = d.data();
+          return { id: d.id, from: data.from, fromUsername: data.fromUsername || '', status: data.status };
+        })
+        .filter(r => r.status === 'pending');
       // Keep userData.friendRequests in sync so the "Accetta richiesta" label
       // in searchUser() and the badge stay correct.
       userData.friendRequests = incomingRequests.map(r => r.from);
@@ -3436,18 +3479,17 @@ function startIncomingRequestsListener() {
       console.warn('Incoming requests listener error:', err);
     });
 
-    // Outgoing ACCEPTED requests (where from == me): when the other party
-    // accepts, we discover it in realtime and add them to our friends list
-    // without needing any cross-user write.
+    // Outgoing requests (where from == me): single-field query, filter
+    // accepted ones client-side. When the other party accepts, we discover
+    // it in realtime and add them to our friends list.
     const qOut = db.collection('pd_friend_requests')
-      .where('from', '==', currentUser.uid)
-      .where('status', '==', 'accepted');
-    qOut.onSnapshot(snap => {
+      .where('from', '==', currentUser.uid);
+    outgoingRequestsListenerUnsubscribe = qOut.onSnapshot(snap => {
       const current = new Set(userData.friends || []);
       const toAdd = [];
       snap.forEach(d => {
         const data = d.data();
-        if (data.to && !current.has(data.to)) toAdd.push(data.to);
+        if (data.status === 'accepted' && data.to && !current.has(data.to)) toAdd.push(data.to);
       });
       if (toAdd.length) {
         db.collection('pd_users').doc(currentUser.uid).update({
@@ -3471,6 +3513,10 @@ function stopIncomingRequestsListener() {
   if (incomingRequestsListenerUnsubscribe) {
     try { incomingRequestsListenerUnsubscribe(); } catch (e) {}
     incomingRequestsListenerUnsubscribe = null;
+  }
+  if (outgoingRequestsListenerUnsubscribe) {
+    try { outgoingRequestsListenerUnsubscribe(); } catch (e) {}
+    outgoingRequestsListenerUnsubscribe = null;
   }
 }
 
@@ -3727,27 +3773,40 @@ function renderChallenges() {
   });
 }
 
-// Serializes challenge checks. checkAllChallenges() is called after many
-// actions (open pack, send/accept request, share, invite…). Because it is
-// async and used to update userData.completedChallenges AFTER the Firestore
-// await, two overlapping calls could both see the same challenge as "not yet
-// completed" and each award its reward (e.g. a +3 pack reward becoming +6 or
-// more). This guard makes any call that arrives while one is in-flight wait
-// for it, so the reward is applied exactly once.
+// True mutex for challenge checks. At most one check runs at a time.
+// If calls arrive while one is running, a single re-run is coalesced
+// and executed after the current one finishes. This prevents the old
+// bug where N waiters all resumed after await and ran in parallel,
+// each awarding the same challenge reward → duplication.
 let challengeCheckInFlight = null;
+let challengeCheckQueued = false;
 
 async function checkAllChallenges() {
   if (!isOnlineApp()) {
     renderChallenges();
     return;
   }
-  // If a check is already running, wait for it to finish, then re-run ONCE so
-  // any progress that changed in the meantime is still caught — but never in
-  // parallel with another check.
+  // If a check is already running, mark that a re-run is needed and
+  // return immediately. The in-flight check will pick it up.
   if (challengeCheckInFlight) {
-    await challengeCheckInFlight;
+    challengeCheckQueued = true;
+    return;
   }
 
+  challengeCheckInFlight = _doCheckAllChallenges();
+  try {
+    await challengeCheckInFlight;
+  } finally {
+    challengeCheckInFlight = null;
+    // If another call arrived while we were running, re-run once.
+    if (challengeCheckQueued) {
+      challengeCheckQueued = false;
+      checkAllChallenges();
+    }
+  }
+}
+
+async function _doCheckAllChallenges() {
   const completed = userData?.completedChallenges || [];
   const completions = userData?.challengeCompletions || {};
   let awarded = 0;
@@ -3774,10 +3833,9 @@ async function checkAllChallenges() {
   }
 
   if (awarded > 0) {
-    // Apply local state SYNCHRONOUSLY before any await. This is the key fix:
-    // any other checkAllChallenges() call that overlaps the Firestore round
-    // trip below will now see completed/completions already updated and will
-    // NOT re-award the same challenge.
+    // Apply local state SYNCHRONOUSLY before any await. This prevents
+    // the onSnapshot from resetting these fields while our Firestore
+    // write is in flight (the onSnapshot handler checks challengeCheckInFlight).
     userData.completedChallenges = completed;
     userData.challengeCompletions = completions;
     userData.bonusPacks = (userData.bonusPacks || 0) + awarded;
@@ -3791,16 +3849,11 @@ async function checkAllChallenges() {
     updates.bonusPacks = firebase.firestore.FieldValue.increment(awarded);
     if (Object.keys(completions).length) updates.challengeCompletions = completions;
 
-    challengeCheckInFlight = (async () => {
-      try {
-        await db.collection('pd_users').doc(currentUser.uid).update(updates);
-      } catch (err) {
-        console.warn('Challenge write error:', err);
-      } finally {
-        challengeCheckInFlight = null;
-      }
-    })();
-    await challengeCheckInFlight;
+    try {
+      await db.collection('pd_users').doc(currentUser.uid).update(updates);
+    } catch (err) {
+      console.warn('Challenge write error:', err);
+    }
   }
 
   renderChallenges();
