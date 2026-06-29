@@ -4220,5 +4220,11 @@ body::after {
 .profile-tab.active::after { background: linear-gradient(90deg, #1a9a5c, #5ed9a0); }
 .progress-bar-fill       { background: linear-gradient(90deg, #1a9a5c 0%, #42d392 60%, #6ee7b7 100%); box-shadow: 0 0 16px rgba(66,211,146,0.45); }
 
+/* ── Glow pacchetti: sopra action-buttons, non clippato ── */
+.pack-carousel-wrapper { position: relative; z-index: 3; }
+.action-buttons, #reset-timer, .pack-balance { position: relative; z-index: 1; }
+.pack-carousel { overflow-y: visible; padding-bottom: 90px; margin-bottom: -50px; }
+
+
 
 
